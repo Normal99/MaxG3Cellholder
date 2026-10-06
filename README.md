@@ -5,8 +5,8 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 * **Cells:** 80 × EVE INR21700-40P (Ø21.15 ±0.10 mm, 70.15 ±0.15 mm)
 * **Configuration:** 20s4p, 72 V nominal / 84 V full
 * **Envelope:** 141 × 270 mm footprint. Holder + cells are **71.8 mm** tall, which leaves ~9 mm of the 81 mm for copper, nickel, fish paper and heat shrink.
-* **Placement:** the pack sits in front of the deck divider. The **BMS sits in a printed cradle on the other side** of the divider. Every lead and balance wire leaves the pack at the divider end.
-* **Printed parts:** only what's needed. Two holder halves (84 cm³ each) and the BMS cradle (15 cm³). No cover plates.
+* **Placement:** the pack sits in front of the deck divider. The **BMS (ANT 24ZHE6-24S-220A) stands upright in a printed stand on the other side** of the divider. Every lead and balance wire leaves the pack at the divider end.
+* **Printed parts:** only what's needed. Two holder halves (84 cm³ each) and the BMS stand (18 cm³). No cover plates.
 
 ![exploded view](docs/render_exploded.png)
 
@@ -18,13 +18,13 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 |---|---|
 | `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each (needs a ≥ 270 mm bed) |
 | `stl/holder_*_a.stl` / `_b.stl` | The same halves split in two for beds < 270 mm. The seam zig-zags between cells, so no cell sits on it. |
-| `stl/bms_cradle.stl` | BMS cradle. **Placeholder size**: set your BMS size first (§8). |
+| `stl/bms_stand.stl` | Stand that holds the BMS upright behind the divider (§8) |
 | `docs/copper_cutlist.svg` | **Copper cut list:** every distinct copper shape once, 1:1, with count, edge lengths and punch holes |
 | `docs/copper_roll_plan.svg` | Every copper piece laid out on a **100 mm wide roll** |
 | `docs/copper_top.svg`, `docs/copper_bottom.svg` | 1:1 position of every copper piece on each face, with punch holes, tab flaps and tongue fold lines |
 | `docs/wiring_top.svg`, `docs/wiring_bottom.svg` | Wiring diagrams: group numbers, cell polarity, copper pieces and balance taps |
 | `docs/layout.md` | Cut list table, plus every group, cell and copper piece |
-| `scad/cellholder.scad` | Parametric OpenSCAD model: holder, cradle, tolerances, BMS size |
+| `scad/cellholder.scad` | Parametric OpenSCAD model: holder, BMS stand, tolerances, BMS size |
 | `scad/layout_data.scad` | Generated layout data (do not edit by hand) |
 | `generator/layout.py` | Generates the layout, copper pieces, diagrams and templates |
 
@@ -123,7 +123,7 @@ The pack's x = 0 face sits against the divider. Nothing passes under or through 
 
 ### Screw post (80 mm from the side wall, 10 mm tall, just in front of the divider)
 
-The post is on the **BMS side** of the divider (`post_side = "bms"`), so the **BMS cradle** has the cutout for it (§8).
+The post is on the **BMS side** of the divider (`post_side = "bms"`), so the **BMS stand** has a notch for it and stands just behind it (§8).
 
 * If it turns out to be on the **pack side**, set `post_side = "pack"`. The bottom holder half then gets a Ø12 × 11 mm pocket, and the empty cell slot is placed right over the post.
 * If the 80 mm is measured from the **other** side wall, set `POST_FROM_SIDE = 141 - 80` (= 61) in `generator/layout.py`. The whole pattern mirrors automatically.
@@ -167,27 +167,29 @@ There is one tab per copper piece, at the small rectangle on the templates. It s
 * **Material: PETG, ASA or ABS. Not PLA** (it creeps and softens in a hot deck).
 * 0.2 mm layers (the 0.6 mm lip is 3 layers), 3 walls, 15–25 % infill.
 * **Holder halves:** print the face with the cell lips **down** (as exported). No supports.
-* **BMS cradle:** print as exported (ribs and walls straight up). No supports.
+* **BMS stand:** print as exported (fins straight up). No supports.
 * **Split parts** (`_a`/`_b`): glue the two parts of each half at the zig-zag seam (CA or plastic weld). The welded copper also ties them together.
 * Print one test strip first and check the cell fit. Cells should push in firmly by hand.
 
-## 8. BMS cradle
+## 8. BMS stand
 
-![BMS cradle](docs/render_bms_cradle.png)
+![BMS stand](docs/render_bms_stand.png)
 
-An open frame that sits on the deck floor right after the divider:
+The ANT BMS (125 × 90 × 16 mm) **stands upright on its long edge**, parallel to the divider, right behind the screw post. It only takes about **45 mm of deck length** past the divider.
 
-* Three thin ribs hold the BMS **12 mm up**, so it clears the 10 mm screw post and wires can run underneath.
-* Low walls keep the BMS in place.
-* Zip-tie holes in the ribs hold it down.
-* The wall facing the divider is open, so the balance harness and the B− lead come straight over the divider.
-* It has a cutout for the screw post.
+* **Height:** the BMS is 90 mm tall standing, so make sure the space past the divider has at least ~91 mm.
+* **Connector end** (the wide 90 mm head with the balance connectors): a low channel holds the bottom edge, and two side fins grip the faces only. The connectors stay free to plug in.
+* **Narrow end** (70 mm section where the power leads come out): a U-clamp holds the end edge. The narrow section sits 10 mm off the floor, so the lower leads have room to bend outwards.
+* **Hold-down:** one zip tie through the holes in the U-clamp fins, looped **under** the narrow section and over its top edge.
+* **Base:** an open frame with braces, so it can't tip over. It has a notch where it passes the 10 mm screw post.
 
-**The BMS size in the model is a placeholder (125 × 70 × 25 mm).** Measure your BMS and set these in `scad/cellholder.scad`, then run `sh scad/export.sh`:
+Settings in `scad/cellholder.scad`:
 
-* `bms_l`, `bms_w`, `bms_h`: BMS size
-* `bms_y`: where its centre sits across the deck
-* `cradle_rise`: how high the BMS sits
+* `bms_head_at`: which side of the deck the connector end faces (`"y0"` or `"y1"`)
+* `bms_y`: where the BMS sits across the deck
+* `bms_*` sizes, if you change BMS
+
+Then run `sh scad/export.sh`.
 
 ## 9. Assembly order
 
@@ -227,4 +229,4 @@ Parameters live in two places:
 * **`scad/cellholder.scad`:**
   * cell size and bore, welding window, cell recess, socket depth, tie slots
   * screw post side (`post_side`)
-  * BMS size and cradle settings
+  * BMS size and stand settings
