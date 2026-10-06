@@ -86,11 +86,12 @@ assert(total_h <= 78, "pack too tall for 81 mm with copper and insulation");
 // ---------------------------------------------------------------------
 module outline() { square([L, W]); }
 
-module split_mask(which) {
+module split_mask(which, face = "bottom") {
     // which: "all", "a", "b"   (zig-zag split between cells)
     // (the BMS dock at x < 0 belongs to part "a")
-    if (which == "a") union() { polygon(split_a); translate([-200, -1]) square([200.01, W + 2]); }
-    else if (which == "b") difference() { translate([0, -1]) square([L + 1, W + 2]); polygon(split_a); }
+    sa = face == "top" ? split_a_top : split_a;   // the two halves split at different columns
+    if (which == "a") union() { polygon(sa); translate([-200, -1]) square([200.01, W + 2]); }
+    else if (which == "b") difference() { translate([0, -1]) square([L + 1, W + 2]); polygon(sa); }
     else translate([-200, -1]) square([L + 201, W + 2]);
 }
 
@@ -157,7 +158,7 @@ module holder_half(face = "bottom", which = "all") {
 
     module socket_layer(cut_post, cut_tie) {
         intersection() {
-            split_mask(which);
+            split_mask(which, face);
             difference() {
                 outline();
                 bores();
@@ -172,7 +173,7 @@ module holder_half(face = "bottom", which = "all") {
     union() {
         // end-stop lip with welding windows
         slab(0, zs) intersection() {
-            split_mask(which);
+            split_mask(which, face);
             difference() {
                 outline();
                 windows();
@@ -182,7 +183,7 @@ module holder_half(face = "bottom", which = "all") {
         }
         // BMS dock arm (top half only), same thickness as the half
         if (face == "top" && bms_dock)
-            slab(0, half_h) intersection() { split_mask(which); dock2d(); }
+            slab(0, half_h) intersection() { split_mask(which, face); dock2d(); }
         // sockets, split into z-bands for the post pocket and the tie slots
         zl = [zs, max(zs, min(zp, tie_z)), tie_z, tie_z + tie_h, max(tie_z + tie_h, zt)];
         for (i = [0 : 3]) {
@@ -235,5 +236,9 @@ if (part == "holder_bottom_b") holder_half("bottom", "b");
 if (part == "holder_top")      holder_half("top");
 if (part == "holder_top_a")    holder_half("top", "a");
 if (part == "holder_top_b")    holder_half("top", "b");
+if (part == "split_view") {   // documentation: the two print parts of a half
+    color("#3a7bd5") holder_half("bottom", "a");
+    color("#f58231") translate([0, 0, 0.01]) holder_half("bottom", "b");
+}
 if (part == "assembly")        assembly();
 if (part == "exploded")        assembly(20);

@@ -394,10 +394,31 @@ def main():
                 continue
             pc["tab"], pc["tab_a"] = pick_tab(pc, face)
 
-    # ---- print split (beds < 270 mm): cells with x < PACK_L/2 -> part A
-    split_x = PACK_L / 2
-    part_a = unary_union([tiles[k] for k, s in enumerate(slots) if s[2] < split_x])
-    part_a = part_a.buffer(0.01).buffer(-0.01)
+    # ---- print splits (beds < 270 mm) that LOCK once the cells are in:
+    # each seam runs through one "key" cell per row. Each key cell's socket
+    # is cut in half across its centre; one half belongs to part A, the
+    # other to part B, alternating row by row. With the key cells pushed
+    # in, every key cell sits in a socket half of both parts, so A and B
+    # cannot slide apart. The top half is split one cell column further
+    # along than the bottom half, so the two seams never line up.
+    def locking_split(split_x):
+        tiles_a, keys = [], []
+        for r in range(N_ROWS):
+            row = [k for k, s in enumerate(slots) if s[0] == r]
+            key = min(row, key=lambda k: (abs(slots[k][2] - split_x), slots[k][2]))
+            kx, ky = slots[key][2], slots[key][3]
+            keys.append((kx, ky))
+            tiles_a += [tiles[k] for k in row if slots[k][2] < kx]
+            half = box(-1, ky, PACK_L + 1, PACK_W + 1) if r % 2 == 0 else box(-1, -1, PACK_L + 1, ky)
+            tiles_a.append(tiles[key].intersection(half))
+        a = unary_union(tiles_a).buffer(0.01, join_style=2).buffer(-0.01, join_style=2)
+        b = box(0, 0, PACK_L, PACK_W).difference(a)
+        if a.geom_type != "Polygon" or b.geom_type != "Polygon":
+            raise SystemExit("print split part is not one piece")
+        return a, keys
+
+    part_a, key_cells = locking_split(PACK_L / 2)
+    part_a_top, key_cells_top = locking_split(PACK_L / 2 + PITCH)
 
     # ---- end voids at x = 0 (odd rows): locating pegs + zip-tie anchors
     voids_x0 = [(X0 / 2 + 0.6, Y0 + r * ROW_H) for r in range(1, N_ROWS, 2)]
@@ -433,7 +454,11 @@ def main():
                                    for pc in top_pieces if 'lead_y' in pc]) + ";")
     lines.append("voids_x0 = " + fmt([list(v) for v in voids_x0]) + ";")
     lines.append("voids_x1 = " + fmt([list(v) for v in voids_x1]) + ";")
-    lines.append("split_a = " + fmt(poly_coords(part_a)) + ";")
+    lines.append("split_a = " + fmt(poly_coords(part_a)) + ";          // bottom half")
+    lines.append("split_a_top = " + fmt(poly_coords(part_a_top)) + ";  // top half")
+    lines.append("// key cells of the print splits (socket shared by both parts)")
+    lines.append("split_keys = " + fmt([list(k) for k in key_cells]) + ";")
+    lines.append("split_keys_top = " + fmt([list(k) for k in key_cells_top]) + ";")
     lines.append("top_copper = " + fmt([poly_coords(pc['poly']) for pc in top_pieces]) + ";")
     lines.append("bottom_copper = " + fmt([poly_coords(pc['poly']) for pc in bot_pieces]) + ";")
     with open(os.path.join(ROOT, "scad", "layout_data.scad"), "w") as f:

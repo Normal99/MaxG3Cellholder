@@ -17,7 +17,7 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 | Path | What it is |
 |---|---|
 | `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each. Bottom is 270 mm long; top with BMS dock is 315 mm, so it needs a big bed. |
-| `stl/holder_*_a.stl` / `_b.stl` | **The same halves split in two, for normal beds.** Every part is ≤ 180 × 141 mm; `holder_top_a` carries the BMS dock. The seam zig-zags between cells, so no cell sits on it. |
+| `stl/holder_*_a.stl` / `_b.stl` | **The same halves split in two, for normal beds.** Every part fits a 256 × 256 bed (largest: `holder_top_a`, 214 × 141 mm, with the BMS dock). The two parts **lock together through 7 shared cell sockets** (§7). |
 | `docs/copper_cutlist.svg` | **Copper cut list:** every distinct copper shape once, 1:1, with count, edge lengths and punch holes |
 | `docs/copper_roll_plan.svg` | Every copper piece laid out on a **100 mm wide roll** |
 | `docs/copper_top.svg`, `docs/copper_bottom.svg` | 1:1 position of every copper piece on each face, with punch holes, tab flaps and tongue fold lines |
@@ -176,17 +176,17 @@ The split parts are all 9.6 mm tall:
 
 | File | Size (mm) |
 |---|---|
-| `stl/holder_bottom_a.stl` | 135 × 141 |
-| `stl/holder_bottom_b.stl` | 146 × 141 |
-| `stl/holder_top_b.stl` | 146 × 141 |
-| `stl/holder_top_a.stl` (has the BMS dock) | 180 × 141 |
+| `stl/holder_bottom_a.stl` | 146 × 141 |
+| `stl/holder_bottom_b.stl` | 157 × 141 |
+| `stl/holder_top_b.stl` | 135 × 141 |
+| `stl/holder_top_a.stl` (has the BMS dock) | 214 × 141 |
 
 ### Print order
 
 1. **`holder_bottom_a` first. It doubles as the fit test.**
    * Push a few cells in: they should go in firmly by hand.
    * If they're too tight or too loose, change `cell_bore` (in both `scad/cellholder.scad` and `generator/layout.py`) and re-export before printing the rest.
-2. `holder_bottom_b`. Glue it to `_a` at the zig-zag seam (CA or plastic weld).
+2. `holder_bottom_b`. It locks to `_a` through the key cells (see below).
 3. `holder_top_b`.
 4. **`holder_top_a` last.** It places the BMS slot, so check these first (§4, §8):
    * the screw-post position
@@ -197,7 +197,20 @@ The split parts are all 9.6 mm tall:
 * **Material: PETG, ASA or ABS. Not PLA** (it creeps and softens in a hot deck).
 * 0.2 mm layers (the 0.6 mm lip under each cell is then exactly 3 layers), 3 walls, 15–25 % infill.
 * **Orientation:** as exported, flat face down. **No supports** for any part. The BMS dock is a flat arm in the same layer as the top half, with only vertical holes.
-* **Split parts:** glue each `_a` / `_b` pair at the zig-zag seam. The seam runs between cells, never through a socket. The welded copper ties the halves together as well.
+* **Split parts:** they join mechanically, so no glue or pins are needed (see below).
+
+### How the split parts lock together
+
+![split joint](docs/render_split_joint.png)
+
+The seam doesn't run between cells. It runs **through a column of cells**, one **key cell** per row (7 per half). In the bottom half they're at x ≈ 124 / 135 mm, in the top half one column further, at x ≈ 146 / 157 mm.
+
+* **How a key cell is split:** its socket is cut in half across the centre. One half belongs to part `_a`, the other to `_b`.
+* **Alternating halves:** row by row, `_a` gets the upper half, then the lower half, and so on.
+* **Why it locks:** once a key cell is pushed in, it sits in a half-socket of **both** parts. Each key cell acts as a 21 mm dowel, and because the halves alternate, the parts can't slide apart in any direction across the pack.
+* **Assembly:** lay `_a` and `_b` side by side on the table, close the seam, and **push the 7 key cells in first**. After that, fill the rest.
+* **Offset seams:** the top and bottom seams are a column apart, so they never line up. Each seam is backed by a solid stretch of the other half, like staggered joints in brickwork, and the pack has no weak line to fold along.
+* **Extra security:** a drop of CA glue along the seam keeps the parts together while you handle them without cells. The welded copper and nickel, which bridge the seam on both faces, make the joint permanent.
 
 ## 8. BMS dock (built into the top holder half)
 
@@ -225,7 +238,7 @@ Then run `sh scad/export.sh`.
 
 ## 9. Assembly order
 
-1. Insert the cells into the **bottom** half, following `docs/wiring_bottom.svg`. Then fit the **top** half.
+1. Insert the cells into the **bottom** half, following `docs/wiring_bottom.svg`. With the split parts, put the 7 key cells in first to lock `_a` and `_b` together (§7). Then fit the **top** half the same way.
    * **Top** terminals: G1 is **−** up, G2 is **+** up, and so on, alternating.
    * Before you weld anything, check every cell's polarity against the diagrams with a meter.
 2. Fit fish-paper rings on the positive ends.
