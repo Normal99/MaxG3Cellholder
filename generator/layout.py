@@ -8,8 +8,7 @@ Computes, from the envelope / pitch / screw-post parameters below:
   * the 20s4p series groups (uniform 2x2 diamonds, see GROUP_PATTERN)
   * the copper busbar pieces for the top and bottom face: rectangles (or an
     L of two rectangles) only, and a cutting plan for a 100 mm copper roll
-  * balance-tab and main-lead positions
-  * wire grooves for the cover plates
+  * balance-tab and main-lead positions, punch hole over every cell
   * split line for printers whose bed is < 270 mm
 
 and writes:
@@ -59,6 +58,7 @@ TAB_SLOT = (7.0, 3.2)      # cover-plate slot for the folded tab (must match sca
 LEAD_W = 40.0              # max main lead tongue width (B-, B+); limited by the piece
 LEAD_LEN = 35.0            # how far the tongue sticks out past the divider end
 ROLL_W = 100.0             # width of the copper roll the pieces are cut from
+PUNCH_D = 8.0              # hole punched in the copper over every cell (nickel welds through it)
 KERF = 2.0                 # spacing between pieces on the roll plan
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -203,68 +203,50 @@ def lat_key(slot):
     return (slot[0], 2 * slot[1] + slot[0] % 2)
 
 
-WIN_CLEAR = WINDOW_D / 2 + 0.55   # copper keeps this far from other groups' cell centres
-MIN_COVER = 1.5                   # copper reaches at least this far past each own cell centre
-RECT_REACH = 1.6                  # two-row rectangles end this far past their corner cells
-
-
 def build_copper(pcs, face):
-    """Copper pieces made of plain RECTANGLES (one rectangle per run of rows
-    the piece covers; a piece that needs two runs is an L).
-
-    The rows are staggered by half a cell, so a square end can only run
-    ~2 mm past the centre of the corner cell before it would sit over the
-    next group's terminal; corner cells are welded on their inner half."""
+    """Copper pieces = one straight bar per row of cells (an L / step shape
+    where a piece covers two rows). Each bar runs halfway to the next cell of
+    another piece in that row, so every cell is fully covered; neighbouring
+    pieces are then pulled apart by one busbar gap. Empty end spots of the
+    short rows go to the B-/B+ pieces next to them (wider lead tongues), the
+    empty chase slot gets no copper (balance wires pass through it)."""
     owner = {}
     for k, pc in enumerate(pcs):
         for i in pc["cells"]:
             owner[lat_key(cells[i])] = k
     lead = {k for k, pc in enumerate(pcs) if face == "top" and pc["tap"] in (0, SERIES)}
-
-    def row_x(k, r):
-        return sorted(lat_xy(r, u)[0] for (rr, u), kk in owner.items() if rr == r and kk == k)
-
-    # obstacles per row: (x, owner) of every cell / the empty chase slot
-    obst = {r: [(lat_xy(r, u)[0], kk) for (rr, u), kk in owner.items() if rr == r]
-            for r in range(N_ROWS)}
     ch = lat_key(chase)
-    obst[ch[0]].append((lat_xy(*ch)[0], None))
-    # empty end spot of a short row next to B+/B- is reserved for that lead
-    reserved = []
-    for r in range(N_ROWS):
-        if r % 2 == 1:
-            for u, nb_u in ((-1, 1), (23, 21)):
-                near = [owner.get((r, nb_u)), owner.get((r - 1, u + (1 if u < 0 else -1))),
-                        owner.get((r + 1, u + (1 if u < 0 else -1)))]
-                ld = [n for n in near if n in lead]
-                if ld:
-                    reserved.append((r, u, ld[0]))
-                    obst[r].append((lat_xy(r, u)[0], ld[0]))
-
-    forced = set()   # (piece, row) that must start a new rectangle
-    for _attempt in range(10):
-        rects = make_rects(pcs, owner, row_x, obst, reserved, forced)
-        bad = [(A[0], A[1]) for A in rects
-               if not covers(A[2], A[3], [x for r in A[1] for x in row_x(A[0], r)])]
-        if not bad:
-            break
-        for k, run in bad:
-            assert len(run) > 1, ("cannot cover", face, pcs[k]["tap"], run)
-            forced.update((k, r) for r in run[1:])
-
-    y_lo, y_hi = CLIP.bounds[1] - BUSBAR_GAP / 2, CLIP.bounds[3] + BUSBAR_GAP / 2
+    g2 = BUSBAR_GAP / 2
+    x_lo, x_hi = WALL_IN - g2, PACK_L - WALL_IN + g2
+    y_lo, y_hi = CLIP.bounds[1] - g2, CLIP.bounds[3] + g2
     raw = {k: [] for k in range(len(pcs))}
-    for k, run, lo, hi in rects:
-        assert covers(lo, hi, [x for r in run for x in row_x(k, r)]), (face, pcs[k]["tap"], run)
-        yb = max(Y0 + (run[0] - 0.5) * ROW_H, y_lo)    # same formula for every
-        yt = min(Y0 + (run[-1] + 0.5) * ROW_H, y_hi)   # row line: no float gaps
-        raw[k].append(box(lo, yb, hi, yt))
+    for r in range(N_ROWS):
+        slots_r = sorted(((lat_xy(r, u)[0], owner.get((r, u), "chase" if (r, u) == ch else None))
+                          for u in range(-1, 24) if (u - r) % 2 == 0
+                          and ((r, u) in owner or (r, u) == ch)), key=lambda t: t[0])
+        # empty end spot of a short row next to a lead piece belongs to it
+        ends = [(-1, slots_r[0][1]), (23, slots_r[-1][1])] if r % 2 == 1 else []
+        for u_end, ks in ends:
+            near = [owner.get((r + dr, u_end + (1 if u_end < 0 else -1))) for dr in (-1, 1)]
+            ld = [n for n in [ks] + near if n in lead]
+            if ld:
+                slots_r.append((lat_xy(r, u_end)[0], ld[0]))
+        slots_r.sort(key=lambda t: t[0])
+        yb = max(Y0 + (r - 0.5) * ROW_H, y_lo)    # same formula for every
+        yt = min(Y0 + (r + 0.5) * ROW_H, y_hi)    # row line: no float gaps
+        for j, (x, k) in enumerate(slots_r):
+            if k in (None, "chase"):
+                continue
+            lo = x_lo if j == 0 else (slots_r[j - 1][0] + x) / 2
+            hi = x_hi if j == len(slots_r) - 1 else (x + slots_r[j + 1][0]) / 2
+            raw[k].append(box(lo, yb, hi, yt))
     for k, pc in enumerate(pcs):
-        # pieces were laid edge to edge; shrinking each by half a gap leaves
-        # exactly one busbar gap everywhere and keeps the rectangles square
-        poly = unary_union(raw[k]).buffer(-BUSBAR_GAP / 2, join_style=2)
+        # pieces touch edge to edge; shrinking each by half a gap leaves one
+        # busbar gap everywhere and keeps every edge square
+        poly = unary_union(raw[k]).buffer(0.001, join_style=2).buffer(-0.001 - g2, join_style=2)
         if poly.geom_type != "Polygon":
-            raise SystemExit(f"{face} B{pc['tap']} copper is not one piece")
+            raise SystemExit(f"{face} B{pc['tap']} copper is not one piece: "
+                             + str([[round(v, 1) for v in b.bounds] for b in raw[k]]))
         pc["poly"] = poly.simplify(0.01)
 
     # main lead tongues: as wide as the piece allows at the divider end
@@ -287,89 +269,6 @@ def build_copper(pcs, face):
             if i not in mine:
                 d = pc["poly"].distance(Point(pos[i]))
                 assert d > WINDOW_D / 2 + 0.5, (face, pc["tap"], i, d)
-
-
-def make_rects(pcs, owner, row_x, obst, reserved, forced):
-    rects = []   # [k, rows, lo, hi]
-    for k, pc in enumerate(pcs):
-        rows = sorted({r for (r, u), kk in owner.items() if kk == k})
-        runs, cur = [], [rows[0]]
-        for r in rows[1:]:
-            cand = cur + [r]
-            if r == cur[-1] + 1 and (k, r) not in forced and fits(k, cand, row_x, obst):
-                cur = cand
-            else:
-                runs.append(cur)
-                cur = [r]
-        runs.append(cur)
-        for run in runs:
-            lo, hi = x_range(k, run, row_x, obst)
-            rects.append([k, run, lo, hi])
-    for r, u, k in reserved:
-        x = lat_xy(r, u)[0]
-        side = [(ox, kk) for ox, kk in obst[r] if (ox > x if u < 0 else ox < x)]
-        ox, kk = min(side, key=lambda o: abs(o[0] - x))
-        if kk == k:
-            continue    # the lead piece already runs through this row
-        c = WIN_CLEAR - BUSBAR_GAP / 2
-        lo = WALL_IN - BUSBAR_GAP / 2 if u < 0 else ox + c
-        hi = ox - c if u < 0 else PACK_L - WALL_IN + BUSBAR_GAP / 2
-        rects.append([k, [r], lo, hi])
-    # every multi-row rectangle reaches the same distance past its end cells,
-    # so all two-row pieces come out the same length (one template)
-    lead_k = {k for k, pc in enumerate(pcs) if "lead" in pc}
-    for A in rects:
-        if len(A[1]) > 1 and A[0] not in lead_k:
-            xs = [x for r in A[1] for x in row_x(A[0], r)]
-            reach = RECT_REACH + BUSBAR_GAP / 2
-            A[2] = max(A[2], min(xs) - reach)
-            A[3] = min(A[3], max(xs) + reach)
-    # same-row neighbours both reach into the space between them: meet halfway
-    for _ in range(3):
-        for A in rects:
-            for B in rects:
-                if A[0] == B[0] or not set(A[1]) & set(B[1]):
-                    continue
-                if A[2] <= B[2] and A[3] > B[2]:
-                    # meet where both pieces still cover all their cells
-                    m = MIN_COVER + BUSBAR_GAP / 2
-                    need_a = max(x for r in A[1] for x in row_x(A[0], r)) + m
-                    need_b = min(x for r in B[1] for x in row_x(B[0], r)) - m
-                    lo_t, hi_t = max(B[2], need_a), min(A[3], need_b)
-                    t = (lo_t + hi_t) / 2 if lo_t <= hi_t else (A[3] + B[2]) / 2
-                    A[3] = B[2] = t
-    return rects
-
-
-def x_range(k, run, row_x, obst):
-    """Raw (gap-less) x range of a rectangle; the final copper is this minus
-    half a gap all round, so the clearances here are reduced by half a gap."""
-    c = WIN_CLEAR - BUSBAR_GAP / 2
-    lo, hi = WALL_IN - BUSBAR_GAP / 2, PACK_L - WALL_IN + BUSBAR_GAP / 2
-    for r in run:
-        xs = row_x(k, r)
-        for ox, kk in obst[r]:
-            if kk == k:
-                continue
-            if ox < xs[0]:
-                lo = max(lo, ox + c)
-            elif ox > xs[-1]:
-                hi = min(hi, ox - c)
-            else:
-                raise ValueError("piece cells not contiguous in a row")
-    return lo, hi
-
-
-def covers(lo, hi, xs):
-    m = MIN_COVER + BUSBAR_GAP / 2
-    return all(lo <= x - m and hi >= x + m for x in xs)
-
-
-def fits(k, run, row_x, obst):
-    lo, hi = x_range(k, run, row_x, obst)
-    return covers(lo, hi, [x for r in run for x in row_x(k, r)])
-
-
 
 
 def pick_tab(pc, face):
@@ -469,7 +368,6 @@ def main():
     print("series contacts:", [contact.get((k, k + 1), 0) for k in range(SERIES - 1)])
 
     tiles = voronoi_tiles()
-    cx, cy = chase[2], chase[3]
 
     # ---- copper pieces (which groups each piece joins)
     def piece_sets(face):
@@ -496,85 +394,10 @@ def main():
                 continue
             pc["tab"], pc["tab_a"] = pick_tab(pc, face)
 
-    # ---- wire grooves on the cover plates
-    lead_bands = [(pc["lead_y"] - pc["lead_w"] / 2 - 5, pc["lead_y"] + pc["lead_w"] / 2 + 5)
-                  for pc in top_pieces if "lead_y" in pc]
-
-    def free_y(y):
-        for lo, hi in lead_bands:
-            if lo < y < hi:
-                return lo if y - lo < hi - y and lo > 8 else hi
-        return y
-
-    def grooves(pcs, face):
-        """Branch groove from every tab to a main channel, channels run to
-        the exit (top: divider edge x = 0, bottom: the wire chase)."""
-        tabs = sorted((pc["tab"] for pc in pcs if "tab" in pc), key=lambda t: t[1])
-        clusters = [[tabs[0]]]
-        for t in tabs[1:]:
-            if t[1] - clusters[-1][-1][1] < 10:
-                clusters[-1].append(t)
-            else:
-                clusters.append([t])
-        big = [c for c in clusters if len(c) > 1] or clusters
-        chans = {id(c): (sum(t[1] for t in c) / len(c), []) for c in big}
-        for c in clusters:
-            for t in c:
-                tgt = min(big, key=lambda b: abs(chans[id(b)][0] - t[1]))
-                chans[id(tgt)][1].append(t)
-        segs = []  # (x1, y1, x2, y2, width)
-        xstart = 0.0 if face == "top" else cx
-        ys = [cy]
-        for ych, ts in chans.values():
-            ych = min(max(ych, 8.0), PACK_W - 8.0)
-            if face == "top":
-                ych = free_y(ych)
-            ys.append(ych)
-            segs.append((xstart, ych, max(t[0] for t in ts), ych, 1.8 * len(ts) + 0.6))
-            for tx, ty in ts:
-                if abs(ty - ych) > 0.1:
-                    segs.append((tx, ty, tx, ych, 2.4))
-        if face == "bottom":
-            segs.append((cx, min(ys), cx, max(ys), 1.8 * len(tabs) / 2 + 0.6))
-        return segs
-
-    top_grooves = grooves(top_pieces, "top")
-    bot_grooves = grooves(bot_pieces, "bottom")
-
-    # ---- engraved tap labels: next to the slot, clear of grooves and slots
-    def labels(pcs, segs, face):
-        from shapely.geometry import LineString
-        keep_out = [LineString([(g[0], g[1]), (g[2], g[3])]).buffer(g[4] / 2 + 1.0, cap_style=3)
-                    for g in segs]
-        out = []
-        for pc in pcs:
-            if "tab" not in pc:
-                continue
-            tx, ty = pc["tab"]
-            keep = keep_out + [box(t[0] - 5, t[1] - 4, t[0] + 5, t[1] + 4)
-                               for t in [q["tab"] for q in pcs if "tab" in q]]
-            best = None
-            for d in (7, 9, 11, 13, 16, 20):
-                for dx, dy in ((d, 0), (-d, 0), (0, d), (0, -d), (d, d), (-d, d), (d, -d), (-d, -d)):
-                    lb = box(tx + dx - 5, ty + dy - 2.5, tx + dx + 5, ty + dy + 2.5)
-                    if (lb.within(box(3, 3, PACK_L - 3, PACK_W - 3))
-                            and not any(lb.intersects(k) for k in keep)):
-                        best = (tx + dx, ty + dy)
-                        break
-                if best:
-                    break
-            out.append([best[0], best[1], f"B{pc['tap']}"] if best else [tx, ty + 7, f"B{pc['tap']}"])
-        return out
-
-    top_labels = labels(top_pieces, top_grooves, "top")
-    bot_labels = labels(bot_pieces, bot_grooves, "bottom")
-
     # ---- print split (beds < 270 mm): cells with x < PACK_L/2 -> part A
     split_x = PACK_L / 2
     part_a = unary_union([tiles[k] for k, s in enumerate(slots) if s[2] < split_x])
     part_a = part_a.buffer(0.01).buffer(-0.01)
-    # lids split at a column boundary away from the holder split
-    lid_split_x = X0 + 7 * PITCH
 
     # ---- end voids at x = 0 (odd rows): locating pegs + zip-tie anchors
     voids_x0 = [(X0 / 2 + 0.6, Y0 + r * ROW_H) for r in range(1, N_ROWS, 2)]
@@ -605,24 +428,12 @@ def main():
                                    for i in range(N)]) + ";")
     lines.append(f"chase = {fmt([chase[2], chase[3]])};")
     lines.append(f"post = {fmt([post[0], post[1], POST_D, POST_H])};")
-    lines.append("// [x, y, tap, slot angle]")
-    lines.append("top_tabs = " + fmt([[pc['tab'][0], pc['tab'][1], pc['tap'], float(pc['tab_a'])]
-                                      for pc in top_pieces if 'tab' in pc]) + ";")
-    lines.append("bottom_tabs = " + fmt([[pc['tab'][0], pc['tab'][1], pc['tap'], float(pc['tab_a'])]
-                                         for pc in bot_pieces if 'tab' in pc]) + ";")
     lines.append("// [y, name, width]  main lead tongues leave over the divider end (x = 0)")
     lines.append("leads = " + fmt([[pc['lead_y'], 'B-' if pc['tap'] == 0 else 'B+', pc['lead_w']]
                                    for pc in top_pieces if 'lead_y' in pc]) + ";")
-    lines.append("// [x1, y1, x2, y2, width]")
-    lines.append("top_grooves = " + fmt([list(s) for s in top_grooves]) + ";")
-    lines.append("bottom_grooves = " + fmt([list(s) for s in bot_grooves]) + ";")
-    lines.append("// [x, y, text] engraved tap labels")
-    lines.append("top_labels = " + fmt(top_labels) + ";")
-    lines.append("bottom_labels = " + fmt(bot_labels) + ";")
     lines.append("voids_x0 = " + fmt([list(v) for v in voids_x0]) + ";")
     lines.append("voids_x1 = " + fmt([list(v) for v in voids_x1]) + ";")
     lines.append("split_a = " + fmt(poly_coords(part_a)) + ";")
-    lines.append(f"lid_split_x = {lid_split_x:.3f};")
     lines.append("top_copper = " + fmt([poly_coords(pc['poly']) for pc in top_pieces]) + ";")
     lines.append("bottom_copper = " + fmt([poly_coords(pc['poly']) for pc in bot_pieces]) + ";")
     with open(os.path.join(ROOT, "scad", "layout_data.scad"), "w") as f:
@@ -671,6 +482,12 @@ def view(face, geom):
     return affinity.scale(geom, 1, -1, origin=(0, PACK_W / 2)) if face == "top" else geom
 
 
+def with_holes(pc):
+    """Copper outline with the punch hole over every cell of the piece."""
+    holes = unary_union([Point(pos[i]).buffer(PUNCH_D / 2, quad_segs=8) for i in pc["cells"]])
+    return pc["poly"].difference(holes)
+
+
 def slot_poly(x, y, ang, size=TAB_SLOT):
     return affinity.rotate(box(x - size[0] / 2, y - size[1] / 2, x + size[0] / 2, y + size[1] / 2), ang)
 
@@ -715,8 +532,6 @@ def write_svgs(groups, assign, pol_up, top_pieces, bot_pieces, chase, post, type
                    f'stroke="#555" stroke-width="0.4" stroke-dasharray="2,1"/>')
         out.append(f'<text x="{cx:.2f}" y="{cy - 2:.2f}" font-size="3.6" text-anchor="middle">EMPTY</text>')
         out.append(f'<text x="{cx:.2f}" y="{cy + 2.5:.2f}" font-size="3.2" text-anchor="middle">wire chase</text>')
-        out.append(f'<circle cx="{post[0]:.2f}" cy="{my(post[1]):.2f}" r="{POST_D / 2}" fill="none" '
-                   f'stroke="#a00" stroke-width="0.5" stroke-dasharray="1,0.8"/>')
         for pc in pcs:
             if "lead_y" in pc:
                 ly = my(pc["lead_y"])
@@ -741,13 +556,13 @@ def write_svgs(groups, assign, pol_up, top_pieces, bot_pieces, chase, post, type
                f'<text x="0" y="-25" font-size="5" font-weight="bold">Copper layout - {face.upper()} face '
                f'({"seen from above" if face == "top" else "seen from below"}) - 1:1, print at 100 %</text>',
                '<text x="0" y="-18" font-size="3.5">Letter = shape (see copper_cutlist.svg). Dashed = fold line. '
-               'Small rectangle = balance tab flap (cut 3 sides, fold up).</text>',
+               'Circles = punch holes (one per cell). Small rectangle = balance tab flap.</text>',
                '<line x1="0" y1="-10" x2="100" y2="-10" stroke="black" stroke-width="0.4"/>'
                '<text x="50" y="-12" font-size="3" text-anchor="middle">100 mm check</text>',
                f'<rect x="0" y="0" width="{PACK_L}" height="{PACK_W}" fill="none" stroke="#bbb" '
                'stroke-width="0.2" stroke-dasharray="2,2"/>']
         for pc in pcs:
-            poly = view(face, pc["poly"])
+            poly = view(face, with_holes(pc))
             out.append(svg_poly(poly, fill="none", stroke="black", stroke_width="0.3"))
             c = poly.representative_point()
             label = f'{pc["shape"]}  B{pc["tap"]}' if pc["shape"] not in ("B-", "B+") else f'{pc["shape"]} (B{pc["tap"]})'
@@ -771,7 +586,7 @@ def write_svgs(groups, assign, pol_up, top_pieces, bot_pieces, chase, post, type
     cw = 150
     placed, x, y, rowh = [], 0, 0, 0
     for k, (letter, pc, n) in enumerate(items):
-        poly = view("top" if pc in top_pieces else "bottom", pc["poly"])
+        poly = view("top" if pc in top_pieces else "bottom", with_holes(pc))
         b = poly.bounds
         poly = affinity.translate(poly, -b[0], -b[1])
         w, h = b[2] - b[0], b[3] - b[1]
@@ -787,7 +602,7 @@ def write_svgs(groups, assign, pol_up, top_pieces, bot_pieces, chase, post, type
            '<text x="0" y="-20" font-size="5" font-weight="bold">Copper cut list - one template per shape, 1:1 '
            '(print at 100 %)</text>',
            '<text x="0" y="-13" font-size="3.5">Cut one template, then trace it as many times as the count says. '
-           'Mirrored copies = flip the template over. All edges are straight.</text>',
+           f'Mirrored copies = flip the template over. Circles = {PUNCH_D:.0f} mm punch hole over each cell.</text>',
            '<line x1="0" y1="-6" x2="100" y2="-6" stroke="black" stroke-width="0.4"/>'
            '<text x="50" y="-7.5" font-size="3" text-anchor="middle">100 mm check</text>']
     for letter, pc, n, poly, w, h in placed:
@@ -824,7 +639,7 @@ def roll_plan(all_pcs):
     Returns placements [(pc, placed_polygon)] and the roll length used."""
     items = []
     for pc in all_pcs:
-        poly = pc["poly"]
+        poly = with_holes(pc)
         b = poly.bounds
         w, h = b[2] - b[0], b[3] - b[1]
         assert min(w, h) <= ROLL_W - KERF, ("piece wider than the roll", pc["tap"])

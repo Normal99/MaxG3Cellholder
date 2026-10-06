@@ -8,17 +8,19 @@ Every copper edge is a straight line. Identical letters = identical pieces (a mi
 
 | Shape | Count | Pieces |
 |---|---|---|
-| A | 12 | top B2, top B4, top B8, top B10, top B14, top B16, bottom B1, bottom B3, bottom B7, bottom B9, bottom B13, bottom B15 |
-| B | 2 | top B18, bottom B19 |
-| C | 1 | top B6 |
-| D | 1 | top B12 |
-| E | 1 | bottom B5 |
-| F | 1 | bottom B11 |
-| G | 1 | bottom B17 |
+| A | 9 | top B2, top B4, top B8, top B10, top B14, bottom B3, bottom B9, bottom B13, bottom B15 |
+| B | 2 | top B16, bottom B1 |
+| C | 2 | top B18, bottom B19 |
+| D | 1 | top B6 |
+| E | 1 | top B12 |
+| F | 1 | bottom B5 |
+| G | 1 | bottom B7 |
+| H | 1 | bottom B11 |
+| I | 1 | bottom B17 |
 | B- | 1 | top B0 + 36 x 35 mm lead tongue |
 | B+ | 1 | top B20 + 36 x 35 mm lead tongue |
 
-All pieces fit across a 100 mm copper roll; one pack uses about 928 mm of roll per copper layer (see copper_roll_plan.svg).
+All pieces fit across a 100 mm copper roll; one pack uses about 1091 mm of roll per copper layer (see copper_roll_plan.svg).
 
 Largest voltage step between neighbouring copper pieces on one face: 12 groups (~50 V at full charge).
 
@@ -54,21 +56,21 @@ Largest voltage step between neighbouring copper pieces on one face: 12 groups (
 | top | B0 | B- | G1 | lead tongue 36 mm wide at y = 22.4 |
 | top | B2 | A | G2 + G3 | (68.4, 19.2) |
 | top | B4 | A | G4 + G5 | (157.2, 19.2) |
-| top | B6 | C | G6 + G7 | (223.8, 57.7) |
+| top | B6 | D | G6 + G7 | (223.8, 57.7) |
 | top | B8 | A | G8 + G9 | (135.0, 57.7) |
 | top | B10 | A | G10 + G11 | (46.2, 57.7) |
-| top | B12 | D | G12 + G13 | (35.1, 102.5) |
+| top | B12 | E | G12 + G13 | (35.1, 102.5) |
 | top | B14 | A | G14 + G15 | (101.7, 102.5) |
-| top | B16 | A | G16 + G17 | (190.5, 102.5) |
-| top | B18 | B | G18 + G19 | (112.8, 128.2) |
+| top | B16 | B | G16 + G17 | (190.5, 102.5) |
+| top | B18 | C | G18 + G19 | (112.8, 128.2) |
 | top | B20 | B+ | G20 | lead tongue 36 mm wide at y = 118.6 |
-| bottom | B1 | A | G1 + G2 | (35.1, 32.0) |
+| bottom | B1 | B | G1 + G2 | (35.1, 32.0) |
 | bottom | B3 | A | G3 + G4 | (112.8, 19.2) |
-| bottom | B5 | E | G5 + G6 | (201.6, 19.2) |
-| bottom | B7 | A | G7 + G8 | (179.4, 57.7) |
+| bottom | B5 | F | G5 + G6 | (201.6, 19.2) |
+| bottom | B7 | G | G7 + G8 | (179.4, 57.7) |
 | bottom | B9 | A | G9 + G10 | (90.6, 57.7) |
-| bottom | B11 | F | G11 + G12 | (35.1, 70.5) |
+| bottom | B11 | H | G11 + G12 | (35.1, 76.9) |
 | bottom | B13 | A | G13 + G14 | (57.3, 102.5) |
 | bottom | B15 | A | G15 + G16 | (146.1, 102.5) |
-| bottom | B17 | G | G17 + G18 | (201.6, 128.2) |
-| bottom | B19 | B | G19 + G20 | (24.0, 128.2) |
+| bottom | B17 | I | G17 + G18 | (201.6, 128.2) |
+| bottom | B19 | C | G19 + G20 | (24.0, 128.2) |
