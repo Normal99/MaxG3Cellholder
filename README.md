@@ -5,8 +5,8 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 * **Cells:** 80 × EVE INR21700-40P (Ø21.15 ±0.10 mm, 70.15 ±0.15 mm)
 * **Configuration:** 20s4p, 72 V nominal / 84 V full
 * **Envelope:** 141 × 270 mm footprint. Holder + cells are **71.8 mm** tall, which leaves ~9 mm of the 81 mm for copper, nickel, fish paper and heat shrink.
-* **Placement:** the pack sits in front of the deck divider. The **BMS (ANT 24ZHE6-24S-220A) stands upright in a printed stand on the other side** of the divider. Every lead and balance wire leaves the pack at the divider end.
-* **Printed parts:** only what's needed. Two holder halves (84 cm³ each) and the BMS stand (18 cm³). No cover plates.
+* **Placement:** the pack sits in front of the deck divider. The **BMS (ANT 24ZHE6-24S-220A) stands upright on the other side** of the divider, held by a dock that is **part of the top holder half**. Every lead and balance wire leaves the pack at the divider end.
+* **Printed parts:** only what's needed. Just the two holder halves. The top one includes the BMS dock. No cover plates, no separate BMS holder.
 
 ![exploded view](docs/render_exploded.png)
 
@@ -16,15 +16,14 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 
 | Path | What it is |
 |---|---|
-| `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each (needs a ≥ 270 mm bed) |
-| `stl/holder_*_a.stl` / `_b.stl` | The same halves split in two for beds < 270 mm. The seam zig-zags between cells, so no cell sits on it. |
-| `stl/bms_stand.stl` | Stand that holds the BMS upright behind the divider (§8) |
+| `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each. Bottom is 270 mm long; top with BMS dock is 315 mm, so it needs a big bed. |
+| `stl/holder_*_a.stl` / `_b.stl` | **The same halves split in two, for normal beds.** Every part is ≤ 180 × 141 mm; `holder_top_a` carries the BMS dock. The seam zig-zags between cells, so no cell sits on it. |
 | `docs/copper_cutlist.svg` | **Copper cut list:** every distinct copper shape once, 1:1, with count, edge lengths and punch holes |
 | `docs/copper_roll_plan.svg` | Every copper piece laid out on a **100 mm wide roll** |
 | `docs/copper_top.svg`, `docs/copper_bottom.svg` | 1:1 position of every copper piece on each face, with punch holes, tab flaps and tongue fold lines |
 | `docs/wiring_top.svg`, `docs/wiring_bottom.svg` | Wiring diagrams: group numbers, cell polarity, copper pieces and balance taps |
 | `docs/layout.md` | Cut list table, plus every group, cell and copper piece |
-| `scad/cellholder.scad` | Parametric OpenSCAD model: holder, BMS stand, tolerances, BMS size |
+| `scad/cellholder.scad` | Parametric OpenSCAD model: holder halves with BMS dock, tolerances, BMS size |
 | `scad/layout_data.scad` | Generated layout data (do not edit by hand) |
 | `generator/layout.py` | Generates the layout, copper pieces, diagrams and templates |
 
@@ -123,7 +122,7 @@ The pack's x = 0 face sits against the divider. Nothing passes under or through 
 
 ### Screw post (80 mm from the side wall, 10 mm tall, just in front of the divider)
 
-The post is on the **BMS side** of the divider (`post_side = "bms"`), so the **BMS stand** has a notch for it and stands just behind it (§8).
+The post is on the **BMS side** of the divider (`post_side = "bms"`), so the BMS simply stands just behind it (§8).
 
 * If it turns out to be on the **pack side**, set `post_side = "pack"`. The bottom holder half then gets a Ø12 × 11 mm pocket, and the empty cell slot is placed right over the post.
 * If the 80 mm is measured from the **other** side wall, set `POST_FROM_SIDE = 141 - 80` (= 61) in `generator/layout.py`. The whole pattern mirrors automatically.
@@ -144,7 +143,7 @@ You can't solder to the copper once it's welded: the copper soaks up the heat an
 2. **On the bench, with no cells near it:** tin the tongue and solder the lead (10 or 12 AWG silicone) along the outer ~20 mm. A 100 W+ iron or a small torch makes copper easy. Let it cool and slide heat shrink over the joint.
 3. Pre-bend the tongue 90° **downwards** at the x = 0 edge.
 4. Lay the piece on its cells, add the nickel and weld. The joint hangs down the divider-end face of the top holder half, **above the divider**.
-5. **Strain relief:** put a zip tie through a **tie slot** in the end wall of the top holder half (at y = 32, 70.5 and 109). The slot at y = 32 sits under the B− tongue and the slot at y = 109 under the B+ tongue. The tie wraps the end wall, so the lead's weight pulls on the plastic, not on the welds.
+5. **Strain relief:** each tongue folds down through a notch in the BMS dock arm. Zip-tie the lead through the hole pair beside the notch, or through the tie slot in the end wall behind it (y = 32 for B−, y = 109 for B+). That way the lead's weight pulls on the plastic, not on the welds.
 
 **No-solder alternative:** crimp a ring lug on the lead and bolt it to the tongue with M5 or M6 (spring washer + nyloc), outside the pack.
 
@@ -167,27 +166,31 @@ There is one tab per copper piece, at the small rectangle on the templates. It s
 * **Material: PETG, ASA or ABS. Not PLA** (it creeps and softens in a hot deck).
 * 0.2 mm layers (the 0.6 mm lip is 3 layers), 3 walls, 15–25 % infill.
 * **Holder halves:** print the face with the cell lips **down** (as exported). No supports.
-* **BMS stand:** print as exported (fins straight up). No supports.
+* **BMS dock:** it's a flat arm in the same layer as the top half, so it prints with it, face down, with no supports. Only vertical holes.
 * **Split parts** (`_a`/`_b`): glue the two parts of each half at the zig-zag seam (CA or plastic weld). The welded copper also ties them together.
 * Print one test strip first and check the cell fit. Cells should push in firmly by hand.
 
-## 8. BMS stand
+## 8. BMS dock (built into the top holder half)
 
-![BMS stand](docs/render_bms_stand.png)
+![BMS dock](docs/render_bms_dock.png)
 
-The ANT BMS (125 × 90 × 16 mm) **stands upright on its long edge**, parallel to the divider, right behind the screw post. It only takes about **45 mm of deck length** past the divider.
+The ANT BMS (125 × 90 × 16 mm) **stands upright on its long edge** on the deck floor, parallel to the divider, just behind the screw post. The **top holder half** has a flat arm that reaches over the divider (it sits at 62–72 mm height, the divider is only 20 mm tall) with a **slot the BMS drops into**. It only takes about **45 mm of deck length** past the divider, and there is no separate part to print or fix down.
+
+![divider end](docs/render_divider_end.png)
 
 * **Height:** the BMS is 90 mm tall standing, so make sure the space past the divider has at least ~91 mm.
-* **Connector end** (the wide 90 mm head with the balance connectors): a low channel holds the bottom edge, and two side fins grip the faces only. The connectors stay free to plug in.
-* **Narrow end** (70 mm section where the power leads come out): a U-clamp holds the end edge. The narrow section sits 10 mm off the floor, so the lower leads have room to bend outwards.
-* **Hold-down:** one zip tie through the holes in the U-clamp fins, looped **under** the narrow section and over its top edge.
-* **Base:** an open frame with braces, so it can't tip over. It has a notch where it passes the 10 mm screw post.
+* **Connector end** (wide 90 mm head): the slot is **open** there, so the balance connectors stay free.
+* **Narrow end** (70 mm section with the power leads): a cross bar closes the slot. That section sits 10 mm off the floor, so the lower leads have room to bend outwards.
+* **Hold-down:** two zip ties, one near each end, through the hole pairs in both rails and over the BMS's top edge.
+* **Lead notches:** the arm has notches at the pack end, so the **B− / B+ tongues still fold down** over the end of the pack. A hole pair beside each notch takes a zip tie around the lead (strain relief).
+* **Printing:** the arm is the same 9.6 mm slab as the half, so it prints flat with it.
 
 Settings in `scad/cellholder.scad`:
 
 * `bms_head_at`: which side of the deck the connector end faces (`"y0"` or `"y1"`)
 * `bms_y`: where the BMS sits across the deck
 * `bms_*` sizes, if you change BMS
+* `bms_dock = false` removes the dock
 
 Then run `sh scad/export.sh`.
 
@@ -229,4 +232,4 @@ Parameters live in two places:
 * **`scad/cellholder.scad`:**
   * cell size and bore, welding window, cell recess, socket depth, tie slots
   * screw post side (`post_side`)
-  * BMS size and stand settings
+  * BMS size and dock settings
