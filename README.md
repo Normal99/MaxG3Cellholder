@@ -163,12 +163,41 @@ There is one tab per copper piece, at the small rectangle on the templates. It s
 
 ## 7. Printing
 
+### What to print
+
+It's only the two holder halves. The BMS dock is part of the top half.
+
+| Your bed | Print these |
+|---|---|
+| **≥ 315 × 141 mm** | `holder_bottom.stl` + `holder_top.stl` (one piece each) |
+| **Smaller, e.g. 256 × 256 mm** (Bambu, Prusa, Ender …) | the four split parts below |
+
+The split parts are all 9.6 mm tall:
+
+| File | Size (mm) |
+|---|---|
+| `stl/holder_bottom_a.stl` | 135 × 141 |
+| `stl/holder_bottom_b.stl` | 146 × 141 |
+| `stl/holder_top_b.stl` | 146 × 141 |
+| `stl/holder_top_a.stl` (has the BMS dock) | 180 × 141 |
+
+### Print order
+
+1. **`holder_bottom_a` first. It doubles as the fit test.**
+   * Push a few cells in: they should go in firmly by hand.
+   * If they're too tight or too loose, change `cell_bore` (in both `scad/cellholder.scad` and `generator/layout.py`) and re-export before printing the rest.
+2. `holder_bottom_b`. Glue it to `_a` at the zig-zag seam (CA or plastic weld).
+3. `holder_top_b`.
+4. **`holder_top_a` last.** It places the BMS slot, so check these first (§4, §8):
+   * the screw-post position
+   * at least ~91 mm of height past the divider
+
+### Settings
+
 * **Material: PETG, ASA or ABS. Not PLA** (it creeps and softens in a hot deck).
-* 0.2 mm layers (the 0.6 mm lip is 3 layers), 3 walls, 15–25 % infill.
-* **Holder halves:** print the face with the cell lips **down** (as exported). No supports.
-* **BMS dock:** it's a flat arm in the same layer as the top half, so it prints with it, face down, with no supports. Only vertical holes.
-* **Split parts** (`_a`/`_b`): glue the two parts of each half at the zig-zag seam (CA or plastic weld). The welded copper also ties them together.
-* Print one test strip first and check the cell fit. Cells should push in firmly by hand.
+* 0.2 mm layers (the 0.6 mm lip under each cell is then exactly 3 layers), 3 walls, 15–25 % infill.
+* **Orientation:** as exported, flat face down. **No supports** for any part. The BMS dock is a flat arm in the same layer as the top half, with only vertical holes.
+* **Split parts:** glue each `_a` / `_b` pair at the zig-zag seam. The seam runs between cells, never through a socket. The welded copper ties the halves together as well.
 
 ## 8. BMS dock (built into the top holder half)
 
