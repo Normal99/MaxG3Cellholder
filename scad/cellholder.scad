@@ -37,7 +37,7 @@ peg_hole_d = 4.4;     // locating peg holes in the lip (end voids)
 void_d     = 10.0;    // lightening pocket in the end voids (tie anchors)
 tie_w      = 4.6;     // zip-tie slot through the end wall (fits 3.6 mm ties)
 tie_h      = 2.0;
-lead_w     = 22.0;    // width of the main lead tongue opening (B-, B+)
+lead_clear = 1.0;     // clearance each side of the main lead tongues (B-, B+)
 
 /* [Cover plates] */
 lid_t      = 2.8;
@@ -94,7 +94,7 @@ module post2d()  {   // open towards the divider end so it never grazes the wall
 }
 module voids()   { for (v = concat(voids_x0, voids_x1)) translate(v) circle(d = void_d); }
 module peg_holes() { for (v = concat(voids_x0, voids_x1)) translate(v) circle(d = peg_hole_d); }
-module lead_gaps() { for (l = leads) translate([-1, l[0] - lead_w / 2]) square([rim_w + 6, lead_w]); }
+module lead_gaps() { for (l = leads) translate([-1, l[0] - l[2] / 2 - lead_clear]) square([rim_w + 6, l[2] + 2 * lead_clear]); }
 module tie_slots() {
     for (v = voids_x0) translate([-1, v[1] - tie_w / 2]) square([v[0], tie_w]);
 }
@@ -183,9 +183,9 @@ module lid(face = "top", which = "all") {
     my = face == "bottom";   // bottom lid is read from below -> mirror text
 
     module through() {
-        for (t = tabs) translate([t[0], t[1]]) square(tab_slot, center = true);
+        for (t = tabs) translate([t[0], t[1]]) rotate(t[3]) square(tab_slot, center = true);
         if (face == "top")
-            for (l = leads) translate([-1, l[0] - lead_w / 2]) square([lead_notch + 1, lead_w]);
+            for (l = leads) translate([-1, l[0] - l[2] / 2 - lead_clear]) square([lead_notch + 1, l[2] + 2 * lead_clear]);
         if (face == "bottom") { chase2d(); post2d(); }
     }
 
@@ -212,7 +212,7 @@ module lid(face = "top", which = "all") {
             // locating pegs into the lip holes in the end voids
             for (v = concat(voids_x0, voids_x1))
                 if (!(face == "top" && v[0] < lead_notch + peg_d &&
-                      min([for (l = leads) abs(l[0] - v[1])]) < lead_w / 2 + peg_d))
+                      min([for (l = leads) abs(l[0] - v[1]) - l[2] / 2]) < peg_d + lead_clear))
                 translate([v[0], v[1], lid_t - 0.01])
                     cylinder(d = peg_d, h = rim_h + lip + 1.5, $fn = 24);
         }

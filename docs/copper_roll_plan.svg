@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="948.4971549564214mm" height="140.0mm" viewBox="-5 -30 948.4971549564214 140.0" font-family="sans-serif">
+<rect x="-5" y="-30" width="100%" height="100%" fill="white"/>
+<text x="0" y="-18" font-size="6" font-weight="bold">Copper roll cutting plan - 100 mm roll, 928 mm long for one pack (1:1)</text>
+<text x="0" y="-9" font-size="4">Every piece of both faces. Label = shape letter + tap. Mark the lines on the copper, cut, then compare each piece with copper_top / copper_bottom.</text>
+<rect x="0" y="0" width="928.5" height="100.0" fill="#f7e3cf" stroke="#b5651d" stroke-width="0.6"/>
+<path d="M14.30,0.00 L0.00,0.00 L0.00,35.95 L11.10,35.95 L11.10,74.40 L69.80,74.40 L69.80,38.45 L14.30,38.45 L14.30,0.00 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="12.7" y="37.2" font-size="5" text-anchor="middle">D B12</text>
+<text x="12.7" y="42.2" font-size="3" text-anchor="middle">top</text>
+<path d="M126.98,78.05 L126.98,41.55 L88.53,41.55 L88.53,0.00 L71.80,0.00 L71.80,86.75 L88.53,86.75 L88.53,78.05 L126.98,78.05 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="99.4" y="59.8" font-size="5" text-anchor="middle">G B17</text>
+<text x="99.4" y="64.8" font-size="3" text-anchor="middle">bottom</text>
+<path d="M167.08,35.95 L253.33,35.95 L253.33,19.23 L178.93,19.23 L178.93,0.00 L166.58,0.00 L166.58,0.00 L128.98,0.00 L128.98,35.95 L166.58,35.95 L167.08,35.95 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="154.0" y="9.6" font-size="5" text-anchor="middle">B+</text>
+<text x="154.0" y="14.6" font-size="3" text-anchor="middle">top</text>
+<path d="M167.43,96.65 L203.38,96.65 L203.38,37.95 L167.43,37.95 L167.43,49.05 L128.98,49.05 L128.98,63.35 L167.43,63.35 L167.43,96.65 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="185.4" y="80.0" font-size="5" text-anchor="middle">F B11</text>
+<text x="185.4" y="85.0" font-size="3" text-anchor="middle">bottom</text>
+<path d="M275.18,37.95 L205.38,37.95 L205.38,73.90 L266.53,73.90 L266.53,93.13 L283.88,93.13 L283.88,76.40 L275.18,76.40 L275.18,37.95 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="240.3" y="55.9" font-size="5" text-anchor="middle">E B5</text>
+<text x="240.3" y="60.9" font-size="3" text-anchor="middle">bottom</text>
+<path d="M333.48,0.00 L308.08,0.00 L308.08,38.45 L285.88,38.45 L285.88,74.40 L333.48,74.40 L333.48,0.00 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="320.8" y="19.2" font-size="5" text-anchor="middle">C B6</text>
+<text x="320.8" y="24.2" font-size="3" text-anchor="middle">top</text>
+<path d="M371.43,38.10 L371.43,0.00 L335.48,0.00 L335.48,37.60 L335.48,38.10 L335.48,83.25 L371.43,83.25 L371.43,38.10 L371.43,38.10 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="353.5" y="60.7" font-size="5" text-anchor="middle">B-</text>
+<text x="353.5" y="65.7" font-size="3" text-anchor="middle">top</text>
+<path d="M548.98,0.00 L373.43,0.00 L373.43,16.73 L548.98,16.73 L548.98,0.00 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="461.2" y="8.4" font-size="5" text-anchor="middle">B B19</text>
+<text x="461.2" y="13.4" font-size="3" text-anchor="middle">bottom</text>
+<path d="M548.98,18.73 L373.43,18.73 L373.43,35.45 L548.98,35.45 L548.98,18.73 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="461.2" y="27.1" font-size="5" text-anchor="middle">B B18</text>
+<text x="461.2" y="32.1" font-size="3" text-anchor="middle">top</text>
+<path d="M454.33,37.45 L373.43,37.45 L373.43,73.40 L454.33,73.40 L454.33,37.45 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="413.9" y="55.4" font-size="5" text-anchor="middle">A B4</text>
+<text x="413.9" y="60.4" font-size="3" text-anchor="middle">top</text>
+<path d="M537.23,37.45 L456.33,37.45 L456.33,73.40 L537.23,73.40 L537.23,37.45 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="496.8" y="55.4" font-size="5" text-anchor="middle">A B16</text>
+<text x="496.8" y="60.4" font-size="3" text-anchor="middle">top</text>
+<path d="M586.93,80.90 L586.93,0.00 L550.98,0.00 L550.98,80.90 L586.93,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="569.0" y="40.4" font-size="5" text-anchor="middle">A B1</text>
+<text x="569.0" y="45.4" font-size="3" text-anchor="middle">bottom</text>
+<path d="M624.88,80.90 L624.88,0.00 L588.93,0.00 L588.93,80.90 L624.88,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="606.9" y="40.4" font-size="5" text-anchor="middle">A B3</text>
+<text x="606.9" y="45.4" font-size="3" text-anchor="middle">bottom</text>
+<path d="M662.84,80.90 L662.84,0.00 L626.88,0.00 L626.88,80.90 L662.84,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="644.9" y="40.4" font-size="5" text-anchor="middle">A B2</text>
+<text x="644.9" y="45.4" font-size="3" text-anchor="middle">top</text>
+<path d="M700.79,80.90 L700.79,0.00 L664.84,0.00 L664.84,80.90 L700.79,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="682.8" y="40.4" font-size="5" text-anchor="middle">A B14</text>
+<text x="682.8" y="45.4" font-size="3" text-anchor="middle">top</text>
+<path d="M738.74,80.90 L738.74,0.00 L702.79,0.00 L702.79,80.90 L738.74,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="720.8" y="40.4" font-size="5" text-anchor="middle">A B13</text>
+<text x="720.8" y="45.4" font-size="3" text-anchor="middle">bottom</text>
+<path d="M776.69,80.90 L776.69,0.00 L740.74,0.00 L740.74,80.90 L776.69,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="758.7" y="40.4" font-size="5" text-anchor="middle">A B8</text>
+<text x="758.7" y="45.4" font-size="3" text-anchor="middle">top</text>
+<path d="M814.64,80.90 L814.64,0.00 L778.69,0.00 L778.69,80.90 L814.64,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="796.7" y="40.4" font-size="5" text-anchor="middle">A B10</text>
+<text x="796.7" y="45.4" font-size="3" text-anchor="middle">top</text>
+<path d="M852.59,80.90 L852.59,0.00 L816.64,0.00 L816.64,80.90 L852.59,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="834.6" y="40.4" font-size="5" text-anchor="middle">A B9</text>
+<text x="834.6" y="45.4" font-size="3" text-anchor="middle">bottom</text>
+<path d="M890.55,80.90 L890.55,0.00 L854.59,0.00 L854.59,80.90 L890.55,80.90 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="872.6" y="40.4" font-size="5" text-anchor="middle">A B15</text>
+<text x="872.6" y="45.4" font-size="3" text-anchor="middle">bottom</text>
+<path d="M928.50,80.85 L928.50,0.00 L892.55,0.00 L892.55,80.85 L928.50,80.85 Z" fill="white" fill-opacity="0.6" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="910.5" y="40.4" font-size="5" text-anchor="middle">A B7</text>
+<text x="910.5" y="45.4" font-size="3" text-anchor="middle">bottom</text>
+</svg>

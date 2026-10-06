@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320mm" height="385.70916756817445mm" viewBox="-10 -30 320 385.70916756817445" font-family="sans-serif">
+<rect x="-10" y="-30" width="100%" height="100%" fill="white"/>
+<text x="0" y="-20" font-size="5" font-weight="bold">Copper cut list - one template per shape, 1:1 (print at 100 %)</text>
+<text x="0" y="-13" font-size="3.5">Cut one template, then trace it as many times as the count says. Mirrored copies = flip the template over. All edges are straight.</text>
+<line x1="0" y1="-6" x2="100" y2="-6" stroke="black" stroke-width="0.4"/><text x="50" y="-7.5" font-size="3" text-anchor="middle">100 mm check</text>
+<path d="M80.90,35.95 L0.00,35.95 L0.00,0.00 L80.90,0.00 L80.90,35.95 Z" fill="#4363d8" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="40.45" y="35.95" font-size="2.6" text-anchor="middle" fill="#333">80.9</text>
+<text x="0.00" y="17.98" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="40.45" y="0.00" font-size="2.6" text-anchor="middle" fill="#333">80.9</text>
+<text x="80.90" y="17.98" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="0.00" y="42.95" font-size="5" font-weight="bold">A  x 12</text>
+<text x="0.00" y="47.95" font-size="3">top: B2, B4, B8, B10, B14, B16; bottom: B1, B3, B7, B9, B13, B15</text>
+<path d="M281.45,16.73 L105.90,16.73 L105.90,0.00 L281.45,0.00 L281.45,16.73 Z" fill="#3cb44b" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="193.67" y="16.73" font-size="2.6" text-anchor="middle" fill="#333">175.5</text>
+<text x="105.90" y="8.36" font-size="2.6" text-anchor="middle" fill="#333">16.7</text>
+<text x="193.67" y="0.00" font-size="2.6" text-anchor="middle" fill="#333">175.5</text>
+<text x="281.45" y="8.36" font-size="2.6" text-anchor="middle" fill="#333">16.7</text>
+<text x="105.90" y="23.73" font-size="5" font-weight="bold">B  x 2</text>
+<text x="105.90" y="28.73" font-size="3">top: B18; bottom: B19</text>
+<path d="M47.60,140.35 L22.20,140.35 L22.20,101.90 L0.00,101.90 L0.00,65.95 L47.60,65.95 L47.60,140.35 Z" fill="#f58231" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="34.90" y="140.35" font-size="2.6" text-anchor="middle" fill="#333">25.4</text>
+<text x="22.20" y="121.13" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="11.10" y="101.90" font-size="2.6" text-anchor="middle" fill="#333">22.2</text>
+<text x="0.00" y="83.93" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="23.80" y="65.95" font-size="2.6" text-anchor="middle" fill="#333">47.6</text>
+<text x="47.60" y="103.15" font-size="2.6" text-anchor="middle" fill="#333">74.4</text>
+<text x="0.00" y="147.35" font-size="5" font-weight="bold">C  x 1</text>
+<text x="0.00" y="152.35" font-size="3">top: B6</text>
+<path d="M99.30,140.35 L85.00,140.35 L85.00,104.40 L96.10,104.40 L96.10,65.95 L154.80,65.95 L154.80,101.90 L99.30,101.90 L99.30,140.35 Z" fill="#911eb4" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="92.15" y="140.35" font-size="2.6" text-anchor="middle" fill="#333">14.3</text>
+<text x="85.00" y="122.38" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="90.55" y="104.40" font-size="2.6" text-anchor="middle" fill="#333">11.1</text>
+<text x="96.10" y="85.18" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="125.45" y="65.95" font-size="2.6" text-anchor="middle" fill="#333">58.7</text>
+<text x="154.80" y="83.93" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="127.05" y="101.90" font-size="2.6" text-anchor="middle" fill="#333">55.5</text>
+<text x="99.30" y="121.13" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="85.00" y="147.35" font-size="5" font-weight="bold">D  x 1</text>
+<text x="85.00" y="152.35" font-size="3">top: B12</text>
+<path d="M249.60,65.95 L179.80,65.95 L179.80,101.90 L240.95,101.90 L240.95,121.13 L258.30,121.13 L258.30,104.40 L249.60,104.40 L249.60,65.95 Z" fill="#f032e6" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="214.70" y="65.95" font-size="2.6" text-anchor="middle" fill="#333">69.8</text>
+<text x="179.80" y="83.93" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="210.38" y="101.90" font-size="2.6" text-anchor="middle" fill="#333">61.2</text>
+<text x="240.95" y="111.52" font-size="2.6" text-anchor="middle" fill="#333">19.2</text>
+<text x="249.62" y="121.13" font-size="2.6" text-anchor="middle" fill="#333">17.3</text>
+<text x="258.30" y="112.77" font-size="2.6" text-anchor="middle" fill="#333">16.7</text>
+<text x="253.95" y="104.40" font-size="2.6" text-anchor="middle" fill="#333">8.7</text>
+<text x="249.60" y="85.18" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="179.80" y="128.13" font-size="5" font-weight="bold">E  x 1</text>
+<text x="179.80" y="133.13" font-size="3">bottom: B5</text>
+<path d="M58.70,206.31 L58.70,170.35 L0.00,170.35 L0.00,206.31 L11.10,206.31 L11.10,244.76 L25.40,244.76 L25.40,206.31 L58.70,206.31 Z" fill="#469990" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="58.70" y="188.33" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="29.35" y="170.35" font-size="2.6" text-anchor="middle" fill="#333">58.7</text>
+<text x="0.00" y="188.33" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="5.55" y="206.31" font-size="2.6" text-anchor="middle" fill="#333">11.1</text>
+<text x="11.10" y="225.53" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="18.25" y="244.76" font-size="2.6" text-anchor="middle" fill="#333">14.3</text>
+<text x="25.40" y="225.53" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="42.05" y="206.31" font-size="2.6" text-anchor="middle" fill="#333">33.3</text>
+<text x="0.00" y="251.76" font-size="5" font-weight="bold">F  x 1</text>
+<text x="0.00" y="256.76" font-size="3">bottom: B11</text>
+<path d="M163.05,170.35 L126.55,170.35 L126.55,208.81 L85.00,208.81 L85.00,225.53 L171.75,225.53 L171.75,208.81 L163.05,208.81 L163.05,170.35 Z" fill="#9a6324" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="144.80" y="170.35" font-size="2.6" text-anchor="middle" fill="#333">36.5</text>
+<text x="126.55" y="189.58" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="105.78" y="208.81" font-size="2.6" text-anchor="middle" fill="#333">41.6</text>
+<text x="85.00" y="217.17" font-size="2.6" text-anchor="middle" fill="#333">16.7</text>
+<text x="128.38" y="225.53" font-size="2.6" text-anchor="middle" fill="#333">86.7</text>
+<text x="171.75" y="217.17" font-size="2.6" text-anchor="middle" fill="#333">16.7</text>
+<text x="167.40" y="208.81" font-size="2.6" text-anchor="middle" fill="#333">8.7</text>
+<text x="163.05" y="189.58" font-size="2.6" text-anchor="middle" fill="#333">38.5</text>
+<text x="85.00" y="232.53" font-size="5" font-weight="bold">G  x 1</text>
+<text x="85.00" y="237.53" font-size="3">bottom: B17</text>
+<path d="M234.85,206.31 L196.75,206.31 L196.75,170.35 L234.35,170.35 L234.85,170.35 L280.00,170.35 L280.00,206.31 L234.85,206.31 L234.85,206.31 Z" fill="#333333" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="215.80" y="206.31" font-size="2.6" text-anchor="middle" fill="#333">38.1</text>
+<text x="196.75" y="188.33" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="215.55" y="170.35" font-size="2.6" text-anchor="middle" fill="#333">37.6</text>
+<text x="257.42" y="170.35" font-size="2.6" text-anchor="middle" fill="#333">45.2</text>
+<text x="280.00" y="188.33" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="257.42" y="206.31" font-size="2.6" text-anchor="middle" fill="#333">45.2</text>
+<text x="196.75" y="213.31" font-size="5" font-weight="bold">B-  x 1</text>
+<text x="196.75" y="218.31" font-size="3">top: B0</text>
+<path d="M38.10,274.76 L124.35,274.76 L124.35,291.48 L49.95,291.48 L49.95,310.71 L37.60,310.71 L37.60,310.71 L0.00,310.71 L0.00,274.76 L37.60,274.76 L38.10,274.76 Z" fill="#c00000" fill-opacity="0.15" stroke="black" stroke-width="0.35" fill-rule="evenodd"/>
+<text x="81.22" y="274.76" font-size="2.6" text-anchor="middle" fill="#333">86.2</text>
+<text x="124.35" y="283.12" font-size="2.6" text-anchor="middle" fill="#333">16.7</text>
+<text x="87.15" y="291.48" font-size="2.6" text-anchor="middle" fill="#333">74.4</text>
+<text x="49.95" y="301.10" font-size="2.6" text-anchor="middle" fill="#333">19.2</text>
+<text x="43.78" y="310.71" font-size="2.6" text-anchor="middle" fill="#333">12.4</text>
+<text x="18.80" y="310.71" font-size="2.6" text-anchor="middle" fill="#333">37.6</text>
+<text x="0.00" y="292.73" font-size="2.6" text-anchor="middle" fill="#333">36.0</text>
+<text x="18.80" y="274.76" font-size="2.6" text-anchor="middle" fill="#333">37.6</text>
+<text x="0.00" y="317.71" font-size="5" font-weight="bold">B+  x 1</text>
+<text x="0.00" y="322.71" font-size="3">top: B20</text>
+</svg>
