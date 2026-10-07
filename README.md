@@ -183,9 +183,13 @@ The split parts are all 9.6 mm tall:
 
 ### Print order
 
-1. **`holder_bottom_a` first. It doubles as the fit test.**
-   * Push a few cells in: they should go in firmly by hand.
-   * If they're too tight or too loose, change `cell_bore` (in both `scad/cellholder.scad` and `generator/layout.py`) and re-export before printing the rest.
+0. **`stl/bore_test.stl` first: the cell fit test** (137 × 35 mm, ~15 cm³, about half an hour).
+   * It's a row of 6 cell holes, **21.1 to 21.6 mm**, built exactly like the holder: same lip, depth, spacing and circle resolution. Each hole has its size printed on the tab next to it.
+   * Push a cell into each hole and pick the one where it goes in **firmly by hand and doesn't fall out** when you turn the strip over.
+   * Set that number as `cell_bore` in `scad/cellholder.scad` **and** `BORE_D` in `generator/layout.py`, then re-run `python3 generator/layout.py` and `sh scad/export.sh`. (Or just tell Claude the number.)
+
+   ![fit test strip](docs/render_bore_test.png)
+1. `holder_bottom_a`. Check a few cells in it before printing the rest.
 2. `holder_bottom_b`. It locks to `_a` through the key cells (see below).
 3. `holder_top_b`.
 4. **`holder_top_a` last.** It places the BMS slot, so check these first (§4, §8):
