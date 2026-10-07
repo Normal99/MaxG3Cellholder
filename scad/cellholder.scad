@@ -25,7 +25,7 @@ part = "assembly";
 /* [Cell] */
 cell_d      = 21.15;  // EVE 40P datasheet: 21.15 +-0.10
 cell_len    = 70.6;   // 70.15 +0.15 max + fish-paper ring + margin
-cell_bore   = 21.6;   // socket bore: 21.15 cell + 0.45 (0.6 mm web at 22.2 pitch). Also in layout.py
+cell_bore   = 21.2;   // socket bore, picked with the fit test strip (1.0 mm web at 22.2 pitch). Also in layout.py
 window_d    = 17.0;   // opening in the end stop over every cell. Also in layout.py
 
 /* [Holder] */

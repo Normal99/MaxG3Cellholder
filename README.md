@@ -105,7 +105,7 @@ To change the layout, edit `GROUP_PATTERN` in `generator/layout.py` and run it a
 | **Total without wrap** | **~72.6** |
 
 * **Holder halves:** each is 9.6 mm tall, with 9 mm deep sockets. Between the halves the cells are bare, over a 52.6 mm gap.
-* **Bore:** Ø21.6 mm, for a snug FDM fit. If your printer prints holes small or large, change `cell_bore`, which is set in **both** `scad/cellholder.scad` and `generator/layout.py`.
+* **Bore:** Ø21.2 mm, picked with the fit test strip (§7): the cells press in firmly by hand. That leaves a 1.0 mm wall between neighbouring cells. On a different printer, print the test strip again and set `cell_bore` in **both** `scad/cellholder.scad` and `generator/layout.py`.
 * **Welding window:** Ø17 mm, the opening in the end stop over every cell.
 
 ---
