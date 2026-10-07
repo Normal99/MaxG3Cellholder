@@ -49,7 +49,7 @@ POST_D = 10.0              # screw post diameter (assumed, measure yours!)
 POST_H = 10.0              # screw post height
 POST_CLEAR = 1.0           # radial clearance around the post
 
-BORE_D = 21.6              # must match cell_bore in cellholder.scad
+BORE_D = 21.2              # must match cell_bore in cellholder.scad (picked with the fit test strip)
 WINDOW_D = 17.0            # must match window_d in cellholder.scad
 WALL_IN = 2.6              # copper keep-out from the outer edge (rim + margin)
 BUSBAR_GAP = 2.5           # gap between neighbouring copper pieces

@@ -25,7 +25,7 @@ part = "assembly";
 /* [Cell] */
 cell_d      = 21.15;  // EVE 40P datasheet: 21.15 +-0.10
 cell_len    = 70.6;   // 70.15 +0.15 max + fish-paper ring + margin
-cell_bore   = 21.6;   // socket bore: 21.15 cell + 0.45 (0.6 mm web at 22.2 pitch). Also in layout.py
+cell_bore   = 21.2;   // socket bore, picked with the fit test strip (1.0 mm web at 22.2 pitch). Also in layout.py
 window_d    = 17.0;   // opening in the end stop over every cell. Also in layout.py
 
 /* [Holder] */
@@ -57,6 +57,9 @@ bms_slot    = 0.4;    // clearance in the slot (thickness and length)
 dock_rail   = 6;      // width of the outer rail of the slot
 dock_end    = 3;      // cross bar that closes the slot at the narrow end
 lead_notch  = 8;      // notches at the pack end the B-/B+ tongues fold down through
+
+/* [Fit test strip] */
+test_bores  = [21.1, 21.2, 21.3, 21.4, 21.5, 21.6];   // hole sizes to try
 
 /* [Quality] */
 $fn = 48;
@@ -236,6 +239,33 @@ if (part == "holder_bottom_b") holder_half("bottom", "b");
 if (part == "holder_top")      holder_half("top");
 if (part == "holder_top_a")    holder_half("top", "a");
 if (part == "holder_top_b")    holder_half("top", "b");
+// ---------------------------------------------------------------------
+// Fit test strip: one row of holes, same lip / depth / pitch as the
+// holder, each a different size, the size raised on a tab next to it.
+// Push a cell into each and pick the one that is firm but goes in by hand.
+// ---------------------------------------------------------------------
+module bore_test() {
+    n = len(test_bores);
+    wall = 2;
+    w = (n - 1) * pitch + 2 * (pitch / 2 + wall - (pitch - max(test_bores)) / 2);
+    x0 = w / 2 - (n - 1) * pitch / 2;
+    dep = max(test_bores) + 2 * wall;
+    difference() {
+        union() {
+            cube([w, dep, half_h]);
+            translate([0, -9, 0]) cube([w, 9.01, 1.2]);          // label tab
+        }
+        for (i = [0 : n - 1]) translate([x0 + i * pitch, dep / 2, 0]) {
+            translate([0, 0, cell_recess]) cylinder(d = test_bores[i], h = half_h);   // same $fn as the holder bores
+            translate([0, 0, -1]) cylinder(d = window_d, h = cell_recess + 2);
+        }
+    }
+    for (i = [0 : n - 1]) translate([x0 + i * pitch, -4.5, 1.2])
+        linear_extrude(0.8) text(str(test_bores[i]), size = 4.2, halign = "center", valign = "center",
+                                 font = "DejaVu Sans:style=Bold");
+}
+
+if (part == "bore_test")       bore_test();
 if (part == "split_view") {   // documentation: the two print parts of a half
     color("#3a7bd5") holder_half("bottom", "a");
     color("#f58231") translate([0, 0, 0.01]) holder_half("bottom", "b");
