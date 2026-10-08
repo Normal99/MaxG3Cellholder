@@ -42,16 +42,17 @@ Coordinates used everywhere:
 
 The footprint fits a staggered grid of 7 rows (12/11/12/11/12/11/12) at 22.2 mm pitch. That makes **81 slots for 80 cells**. The spare slot is left empty at the divider end and doubles as a wire chase (§4).
 
-Almost every 4p group is a compact **2 × 2 diamond**: 2 cells in one row and 2 in the next. The pack is built from bands of them:
+Every 4p group is **4 cells in a straight line along a row**. Along each row the polarity goes 4 − / 4 + / 4 −, and each row is flipped against the next, like a checkerboard of 4-cell blocks. The pack is three blocks wide.
 
-| Rows (from the y = 0 side) | Groups | Direction |
+The series path runs **up and down between rows**: a line of 4 sits right on top of the next group's line of 4, with 7 cell contacts. So nearly every series joint is short and wide:
+
+| Block | Groups | Direction |
 |---|---|---|
-| Rows 1–2 | **G1 → G5** (G1 = **B−**) | away from the divider |
-| Far end | G6 | turn |
-| Rows 3–4 | **G7 → G11** | back to the divider |
-| Divider end | G12 | turn |
-| Rows 5–6 | **G13 → G17** | away from the divider |
-| Row 7 | **G18 → G20**, 4 cells in a line (G20 = **B+**) | back to the divider |
+| Divider block | **G1 → G4** (G1 = **B−**, row 1) | rows 1 → 4 |
+| Middle block | **G5 → G8** | rows 4 → 1 |
+| Far-end block | **G9 → G14** (G10–G13 take the cells of the short rows) | rows 1 → 7 |
+| Middle block | **G15 → G17** | rows 7 → 5 |
+| Divider block | **G18 → G20** (G20 = **B+**, row 7) | rows 5 → 7 |
 
 ### Copper pieces: one straight bar per row
 
@@ -65,17 +66,17 @@ Almost every 4p group is a compact **2 × 2 diamond**: 2 cells in one row and 2 
 
 | Shape | Count | Size | What it is |
 |---|---|---|---|
-| **A** | **9** | 97.4 × 36 mm step: two 86.3 mm bars, offset 11.1 mm | Standard piece: two diamonds, 8 cells |
-| **B** | 2 | same as A with one end squared off at the pack wall | |
-| **C** | 2 | 175.5 × 16.7 mm strip | Row 7: 8 cells in a line |
-| D–I | 1 each | step shapes | Turn pieces at the two ends of the pack |
+| **A** | **6** | 97.4 × 36 mm step: two 86.3 mm bars, offset 11.1 mm | Standard piece: two lines of 4, one above the other |
+| **B**, D | 3 + 1 | ~98 × 36 mm | Same as A, with one end squared off at the pack wall |
+| **C**, E, K | 2 + 1 + 1 | ~175–187 × 16.7 mm strip | 8 cells in a line, where the path moves to the next block (G4→G5, G8→G9, G14→G15, G17→G18) |
+| F–J | 1 each | ~76–87 × 55 mm step shapes | Far-end block, where the rows are one cell short |
 | **B−**, **B+** | 1 each | with a **36 × 35 mm lead tongue** | Main leads (§5) |
 
 **How to prepare the copper:**
 
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
-* **Roll plan:** `docs/copper_roll_plan.svg` lays out every piece of both faces on a **100 mm wide roll**. One pack uses about **1.1 m of roll** per copper layer.
+* **Roll plan:** `docs/copper_roll_plan.svg` lays out every piece of both faces on a **100 mm wide roll**. One pack uses about **1 m of roll** per copper layer.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
@@ -85,8 +86,8 @@ Almost every 4p group is a compact **2 × 2 diamond**: 2 cells in one row and 2 
   * **Top face:** B0 (G1, main −), then B2, B4 … B18, then B20 (G20, main +). That's 11 pieces.
   * **Bottom face:** B1, B3 … B19. That's 10 pieces.
 * The balance tap number equals the copper piece number. Taps B0–B20 go to BMS balance pins 0–20 (B0 = B−, B20 = B+).
-* **Bands keep voltages low.** Neighbouring copper pieces are at most 12 groups apart (~50 V). Still lay fish paper over each face before wrapping.
-* **The last row is the one compromise.** Seven rows can't be split into 2-row bands only. In row 7 the groups G18 → G19 → G20 sit end to end, so current flows lengthwise along the two C strips. **Use double-thickness copper (two layers) for the two C strips.**
+* **Voltages:** neighbouring copper pieces are at most 14 groups apart (~59 V), between rows 4 and 5 of the divider block. Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 4 and 5.
+* **The one compromise:** where the path moves from one block to the next, two groups sit end to end in the same row (G4→G5, G8→G9, G14→G15, G17→G18). Current then flows lengthwise along those four 8-cell strips. **Use double-thickness copper (two layers) for the 4 strips** (C, E, K).
 
 To change the layout, edit `GROUP_PATTERN` in `generator/layout.py` and run it again (§10).
 

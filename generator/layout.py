@@ -102,36 +102,46 @@ nbr = [[j for j in range(N) if j != i and dist(i, j) < PITCH * 1.05]
        for i in range(N)]
 
 # --------------------------------------------------------------------------
-# 20s4p grouping - uniform "diamond" bands (easy to cut, repeatable copper)
+# 20s4p grouping - "4 in a line" checkerboard
 #
-# Almost every group is the same compact 2 x 2 diamond (2 cells in one row,
-# 2 in the next), so almost every copper piece is the SAME rectangle
-# (two diamonds side by side, 80.9 x 36 mm).
+# Every group is 4 cells in a straight line along a row, so each row reads
+# 4 neg / 4 pos / 4 neg ... and the row below is flipped (checkerboard of
+# 4-cell blocks). The pack is three blocks wide (the far-end block holds the
+# rows that are one cell short). The series path runs DOWN/UP between rows
+# (a straight line of 4 sits right on top of the next, 7 cell contacts):
 #
-#   rows R0-R1  G1  -> G5    out   (diamonds)      B- = G1 at the divider
-#   far end     G6           turn
-#   rows R2-R3  G7  -> G11   back  (diamonds)
-#   divider end G12          turn
-#   rows R4-R5  G13 -> G17   out   (diamonds)
-#   row  R6     G18 -> G20   back  (4 cells in a line) B+ = G20 at the divider
+#   divider block, rows R0->R3   G1  -> G4    (B- = G1, row R0)
+#   middle block,  rows R3->R0   G5  -> G8
+#   far-end block, rows R0->R6   G9  -> G14   (rows R1/R3-R5 are short:
+#                                              G10-G13 take the odd cells)
+#   middle block,  rows R6->R4   G15 -> G17
+#   divider block, rows R4->R6   G18 -> G20   (B+ = G20, row R6)
 #
-# 7 rows can never be split into 2-row bands only, so the last row is a
-# straight strip of single-row groups (double the copper on those 2 strips).
-# Neighbouring bands are 5-11 groups apart (max ~46 V) instead of the full
-# pack voltage of a two-lane U.
+# Moving to the next block happens along a row (G4->G5, G8->G9, G14->G15,
+# G17->G18): those four copper pieces are 8 cells in a line - double the
+# copper on them.
 #
 # Cells are addressed as (R, u): R = row, u = x position in half pitches
 # (even rows: u = 0,2..22, odd rows: u = 1,3..21). The empty slot (screw
 # post / wire chase) is (R4, u0). If the post is measured from the other
 # side wall the pattern is mirrored (R -> 6 - R).
 # --------------------------------------------------------------------------
+def line(R, u0):
+    """4 cells in a row starting at u0."""
+    return [(R, u0 + 2 * k) for k in range(4)]
+
+
 GROUP_PATTERN = (
-    [[(0, u), (0, u + 2), (1, u + 1), (1, u + 3)] for u in (0, 4, 8, 12, 16)]       # G1-G5
-    + [[(0, 20), (0, 22), (1, 21), (2, 22)]]                                         # G6
-    + [[(2, u), (2, u + 2), (3, u + 1), (3, u + 3)] for u in (18, 14, 10, 6, 2)]     # G7-G11
-    + [[(2, 0), (3, 1), (4, 2), (5, 1)]]                                             # G12
-    + [[(4, u), (4, u + 2), (5, u - 1), (5, u + 1)] for u in (4, 8, 12, 16, 20)]     # G13-G17
-    + [[(6, u), (6, u + 2), (6, u + 4), (6, u + 6)] for u in (16, 8, 0)]             # G18-G20
+    [line(0, 0), line(1, 1), line(2, 0), line(3, 1)]                 # G1-G4   divider block, down
+    + [line(3, 9), line(2, 8), line(1, 9), line(0, 8)]               # G5-G8   middle block, up
+    + [line(0, 16),                                                  # G9      far-end block, down
+       [(1, 17), (1, 19), (1, 21), (2, 22)],                         # G10
+       [(2, 16), (2, 18), (2, 20), (3, 17)],                         # G11
+       [(3, 19), (3, 21), (4, 20), (4, 22)],                         # G12
+       [(4, 18), (5, 17), (5, 19), (5, 21)],                         # G13
+       line(6, 16)]                                                  # G14
+    + [line(6, 8), line(5, 9), line(4, 10)]                          # G15-G17 middle block, up
+    + [line(4, 2), line(5, 1), line(6, 0)]                           # G18-G20 divider block, down
 )
 
 
