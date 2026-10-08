@@ -42,17 +42,20 @@ Coordinates used everywhere:
 
 The footprint fits a staggered grid of 7 rows (12/11/12/11/12/11/12) at 22.2 mm pitch. That makes **81 slots for 80 cells**. The spare slot is left empty at the divider end and doubles as a wire chase (§4).
 
-Every 4p group is **4 cells in a straight line along a row**. Along each row the polarity goes 4 − / 4 + / 4 −, and each row is flipped against the next, like a checkerboard of 4-cell blocks. The pack is three blocks wide.
+**14 of the 20 groups are 4 cells in a straight line along a row.** The other 6 fill the far end and the divider end, where rows are one cell short.
 
-The series path runs **up and down between rows**: a line of 4 sits right on top of the next group's line of 4, with 7 cell contacts. So nearly every series joint is short and wide:
+**No two consecutive groups ever sit end to end in the same row.** Every series joint is between neighbouring rows and touches at 3 to 7 cells. That means **single-layer copper everywhere, no double copper**:
 
-| Block | Groups | Direction |
+* The narrowest copper bridge between two groups is **~36 mm**.
+* An end-to-end joint was only ~14 mm.
+
+| Part of the pack | Groups | Pattern |
 |---|---|---|
-| Divider block | **G1 → G4** (G1 = **B−**, row 1) | rows 1 → 4 |
-| Middle block | **G5 → G8** | rows 4 → 1 |
-| Far-end block | **G9 → G14** (G10–G13 take the cells of the short rows) | rows 1 → 7 |
-| Middle block | **G15 → G17** | rows 7 → 5 |
-| Divider block | **G18 → G20** (G20 = **B+**, row 7) | rows 5 → 7 |
+| Top lane, rows 1–2 | **G1 → G5** (G1 = **B−**, row 1) | Lines alternate row 1 / row 2, each shifted 1.5–2.5 cells (like bricks), running away from the divider |
+| Far-end turn | **G6 → G9** | Short-row cells, 2–3 row shapes, rows 2 → 7 |
+| Bottom lane, rows 6–7 | **G10 → G11** | Back towards the divider |
+| Middle lane, rows 3–5 | **G12 → G16** | Bricks in rows 3 / 4, back to the divider |
+| Divider block | **G17 → G20** (G20 = **B+**, row 7) | G17 fills the end of rows 2–4, then lines stacked rows 5 → 7 |
 
 ### Copper pieces: one straight bar per row
 
@@ -64,19 +67,22 @@ The series path runs **up and down between rows**: a line of 4 sits right on top
 * Every edge is a straight, square cut.
 * **Every cell is fully covered.** Each piece only covers the cells of its own groups, so it is easy to see where it goes.
 
-| Shape | Count | Size | What it is |
-|---|---|---|---|
-| **A** | **6** | 97.4 × 36 mm step: two 86.3 mm bars, offset 11.1 mm | Standard piece: two lines of 4, one above the other |
-| **B**, D | 3 + 1 | ~98 × 36 mm | Same as A, with one end squared off at the pack wall |
-| **C**, E, K | 2 + 1 + 1 | ~175–187 × 16.7 mm strip | 8 cells in a line, where the path moves to the next block (G4→G5, G8→G9, G14→G15, G17→G18) |
-| F–J | 1 each | ~76–87 × 55 mm step shapes | Far-end block, where the rows are one cell short |
-| **B−**, **B+** | 1 each | with a **36 × 35 mm lead tongue** | Main leads (§5) |
+| Shape | Count | What it is |
+|---|---|---|
+| **A** | **4** | Standard brick piece: two 86.3 mm bars (lines of 4), 36 mm tall, offset 33.3 mm |
+| **B** | **2** | Same, offset 55.5 mm |
+| C, I | 1 each | Brick piece with one end squared off at the pack wall |
+| H, O | 1 each | Two lines stacked almost straight (offset 11.1 mm), divider block |
+| D, E, F, G, J–N | 1 each | Step shapes of 3–4 bars, at the far-end turn and the divider end |
+| **B−**, **B+** | 1 each | With a **36 × 35 mm lead tongue** (main leads, §5) |
+
+There are more one-off shapes than with the old checkerboard. That's the price of getting rid of the end-to-end strips. Every piece is still made of straight bars with square cuts, and `docs/copper_cutlist.svg` has a 1:1 template for each one.
 
 **How to prepare the copper:**
 
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
-* **Roll plan:** `docs/copper_roll_plan.svg` lays out every piece of both faces on a **100 mm wide roll**. One pack uses about **1 m of roll** per copper layer.
+* **Roll plan:** `docs/copper_roll_plan.svg` lays out every piece of both faces on a **100 mm wide roll**. One pack uses about **1.4 m of roll**.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
@@ -86,8 +92,8 @@ The series path runs **up and down between rows**: a line of 4 sits right on top
   * **Top face:** B0 (G1, main −), then B2, B4 … B18, then B20 (G20, main +). That's 11 pieces.
   * **Bottom face:** B1, B3 … B19. That's 10 pieces.
 * The balance tap number equals the copper piece number. Taps B0–B20 go to BMS balance pins 0–20 (B0 = B−, B20 = B+).
-* **Voltages:** neighbouring copper pieces are at most 14 groups apart (~59 V), between rows 4 and 5 of the divider block. Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 4 and 5.
-* **The one compromise:** where the path moves from one block to the next, two groups sit end to end in the same row (G4→G5, G8→G9, G14→G15, G17→G18). Current then flows lengthwise along those four 8-cell strips. **Use double-thickness copper (two layers) for the 4 strips** (C, E, K).
+* **Voltages:** neighbouring copper pieces are at most 16 groups apart (~67 V). The big steps are all along the line between the top lane (rows 1–2) and the middle lane (rows 3–4). Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 2 and 3.
+* **No double copper:** every joint is a single layer. The weakest joints are the 3-contact brick steps (~36 mm of copper across).
 
 To change the layout, edit `GROUP_PATTERN` in `generator/layout.py` and run it again (§10).
 

@@ -5,7 +5,7 @@ Layout generator for the Segway Ninebot Max G3 20s4p 21700 cell holder.
 Computes, from the envelope / pitch / screw-post parameters below:
   * the staggered (hex) cell grid                     -> 81 slots, 80 cells
   * which slot is left empty for the screw post       -> also used as wire chase
-  * the 20s4p series groups (uniform 2x2 diamonds, see GROUP_PATTERN)
+  * the 20s4p series groups (lines of 4, see GROUP_PATTERN)
   * the copper busbar pieces for the top and bottom face: rectangles (or an
     L of two rectangles) only, and a cutting plan for a 100 mm copper roll
   * balance-tab and main-lead positions, punch hole over every cell
@@ -102,24 +102,24 @@ nbr = [[j for j in range(N) if j != i and dist(i, j) < PITCH * 1.05]
        for i in range(N)]
 
 # --------------------------------------------------------------------------
-# 20s4p grouping - "4 in a line" checkerboard
+# 20s4p grouping - straight lines of 4, no end-to-end joints
 #
-# Every group is 4 cells in a straight line along a row, so each row reads
-# 4 neg / 4 pos / 4 neg ... and the row below is flipped (checkerboard of
-# 4-cell blocks). The pack is three blocks wide (the far-end block holds the
-# rows that are one cell short). The series path runs DOWN/UP between rows
-# (a straight line of 4 sits right on top of the next, 7 cell contacts):
+# 14 of the 20 groups are 4 cells in a straight line along a row. Two
+# consecutive groups are NEVER end to end in the same row (that joint only
+# touches at one cell and needed double copper): every series joint is
+# between neighbouring rows and touches at 3..7 cells, so even the narrowest
+# copper bridge is ~36 mm wide (an end-to-end joint is ~14 mm).
 #
-#   divider block, rows R0->R3   G1  -> G4    (B- = G1, row R0)
-#   middle block,  rows R3->R0   G5  -> G8
-#   far-end block, rows R0->R6   G9  -> G14   (rows R1/R3-R5 are short:
-#                                              G10-G13 take the odd cells)
-#   middle block,  rows R6->R4   G15 -> G17
-#   divider block, rows R4->R6   G18 -> G20   (B+ = G20, row R6)
-#
-# Moving to the next block happens along a row (G4->G5, G8->G9, G14->G15,
-# G17->G18): those four copper pieces are 8 cells in a line - double the
-# copper on them.
+#   top lane,    rows R0/R1  G1  -> G5   lines alternate R0 / R1, each one
+#                                        shifted 1.5-2.5 cells (brick
+#                                        pattern), away from the divider
+#                                        (B- = G1, row R0)
+#   far-end turn, R1 -> R6   G6  -> G9   short-row cells, 2-3 row shapes
+#   bottom lane, rows R6/R5  G10 -> G11  back towards the divider
+#   middle lane, R4 -> R2    G12 -> G16  brick pattern R2 / R3, back to the
+#                                        divider
+#   divider block, R1 -> R6  G17 -> G20  G17 fills the R1-R3 end, then lines
+#                                        stacked R4 -> R6 (B+ = G20, row R6)
 #
 # Cells are addressed as (R, u): R = row, u = x position in half pitches
 # (even rows: u = 0,2..22, odd rows: u = 1,3..21). The empty slot (screw
@@ -132,16 +132,15 @@ def line(R, u0):
 
 
 GROUP_PATTERN = (
-    [line(0, 0), line(1, 1), line(2, 0), line(3, 1)]                 # G1-G4   divider block, down
-    + [line(3, 9), line(2, 8), line(1, 9), line(0, 8)]               # G5-G8   middle block, up
-    + [line(0, 16),                                                  # G9      far-end block, down
-       [(1, 17), (1, 19), (1, 21), (2, 22)],                         # G10
-       [(2, 16), (2, 18), (2, 20), (3, 17)],                         # G11
-       [(3, 19), (3, 21), (4, 20), (4, 22)],                         # G12
-       [(4, 18), (5, 17), (5, 19), (5, 21)],                         # G13
-       line(6, 16)]                                                  # G14
-    + [line(6, 8), line(5, 9), line(4, 10)]                          # G15-G17 middle block, up
-    + [line(4, 2), line(5, 1), line(6, 0)]                           # G18-G20 divider block, down
+    [line(0, 0), line(1, 3), line(0, 8), line(1, 11), line(0, 16)]  # G1-G5   top lane
+    + [[(1, 19), (1, 21), (2, 18), (2, 20)],                         # G6      far-end turn
+       [(2, 22), (3, 21), (4, 18), (4, 20)],                         # G7
+       [(4, 22), (5, 19), (5, 21), (6, 22)],                         # G8
+       [(5, 15), (5, 17), (6, 18), (6, 20)]]                         # G9
+    + [line(6, 10), [(5, 9), (5, 11), (5, 13), (6, 8)]]              # G10-G11 bottom lane
+    + [line(4, 10), line(3, 13), line(2, 10), line(3, 5), line(2, 2)]  # G12-G16 middle lane
+    + [[(1, 1), (2, 0), (3, 1), (3, 3)],                             # G17     divider block
+       line(4, 2), line(5, 1), line(6, 0)]                           # G18-G20
 )
 
 
