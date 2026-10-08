@@ -29,9 +29,13 @@ Coordinates: x along the 270 mm length, x = 0 is the DIVIDER end.
 """
 import math
 import os
+import random
+
+import numpy as np
+import shapely
 
 from shapely import affinity
-from shapely.geometry import MultiPoint, Point, box
+from shapely.geometry import MultiPoint, Point, Polygon, box
 from shapely.ops import unary_union, voronoi_diagram
 
 # --------------------------------------------------------------------------
@@ -482,7 +486,7 @@ def main():
                 if p1 is not p2 and p1["poly"].distance(p2["poly"]) < BUSBAR_GAP + 1:
                     maxdv = max(maxdv, abs(p1["tap"] - p2["tap"]))
     print("largest voltage step between neighbouring pieces:", maxdv, "taps")
-    plan, roll_len = roll_plan(top_pieces + bot_pieces)
+    plan, roll_len = roll_plan([top_pieces, bot_pieces])
     print(f"copper roll: {ROLL_W:.0f} mm wide x {roll_len:.0f} mm long")
     write_roll_svg(plan, roll_len, top_pieces)
     write_svgs(groups, assign, pol_up, top_pieces, bot_pieces, chase, post, types)
@@ -668,44 +672,101 @@ def flap_poly(pc):
     return slot_poly(x, y, pc["tab_a"], (TAB_W, TAB_SLOT[0]))
 
 
-def roll_plan(all_pcs):
-    """Bottom-left packing of every copper piece on a ROLL_W wide roll.
+def roll_plan(faces):
+    """Nest every copper piece on a ROLL_W wide roll. Per face, the biggest
+    set of pieces that fits in a ROLL_W tall band is kept exactly as it sits
+    on the pack (already nested, busbar gap = cut line); the band and the
+    remaining single pieces are then packed by their real outlines, not
+    bounding boxes. Greedy bottom-left fill on a 0.5 mm raster over 4
+    rotations, either side up; the best of a few fixed piece orders wins.
     Returns placements [(pc, placed_polygon)] and the roll length used."""
-    items = []
-    for pc in all_pcs:
-        poly = with_holes(pc)
+    res, bb = 0.5, KERF / 2 + 0.5           # raster step, half kerf + 1 step
+    rows = int(math.ceil((ROLL_W + 2 * bb) / res))   # roll edges need no kerf:
+    cols = int(round(5 * PACK_L / res))            # the raster overhangs them
+
+    def raster(poly):
         b = poly.bounds
-        w, h = b[2] - b[0], b[3] - b[1]
-        assert min(w, h) <= ROLL_W - KERF, ("piece wider than the roll", pc["tap"])
-        items.append((pc, affinity.translate(poly, -b[0], -b[1]), w, h))
-    items.sort(key=lambda it: -it[2] * it[3])
-    placed = []   # (x1, y1, x2, y2)
+        xs = b[0] + (np.arange(int(math.ceil((b[2] - b[0]) / res))) + 0.5) * res
+        ys = b[1] + (np.arange(int(math.ceil((b[3] - b[1]) / res))) + 0.5) * res
+        gx, gy = np.meshgrid(xs, ys)
+        return shapely.contains_xy(poly, gx, gy).astype(float)
+
+    def outline(pc):
+        return Polygon(pc["poly"].exterior)
+
+    # items: one pack-position band per face + the rest one by one
+    items = []
+    for pcs in faces:
+        best = []
+        for p in pcs:
+            for lo in (p["poly"].bounds[1], p["poly"].bounds[3] - ROLL_W):
+                band = [q for q in pcs if q["poly"].bounds[1] >= lo - 0.01
+                        and q["poly"].bounds[3] <= lo + ROLL_W + 0.01]
+                if sum(q["poly"].area for q in band) > sum(q["poly"].area for q in best):
+                    best = band
+        items.append(best)
+        items += [[q] for q in pcs if q not in best]
+    opts = []
+    for it in items:
+        geom = unary_union([outline(q) for q in it])
+        o = []
+        for flip in (1, -1):
+            for ang in (0, 90, 180, 270):
+                g = affinity.rotate(affinity.scale(geom, flip, 1, origin=(0, 0)), ang, origin=(0, 0))
+                gh = g.bounds[3] - g.bounds[1]
+                if gh <= ROLL_W:
+                    m = raster(g.buffer(bb, join_style=2))
+                    k = np.zeros((rows, cols))
+                    k[:m.shape[0], :m.shape[1]] = m
+                    o.append((flip, ang, gh, g.bounds, m, np.conj(np.fft.rfft2(k))))
+        assert o, ("piece wider than the roll", [q["tap"] for q in it])
+        opts.append(o)
+
+    def pack(order):
+        occ = np.zeros((rows, cols))
+        placed, length = [], 0
+        for i in order:
+            fo = np.fft.rfft2(occ)
+            best = None
+            for flip, ang, gh, gb, m, fk in opts[i]:
+                h, w = m.shape
+                over = np.fft.irfft2(fo * fk, s=occ.shape)[: rows - h + 1, : cols - w + 1]
+                free = np.argwhere(over < 0.5)
+                free = free[free[:, 0] * res + gh <= ROLL_W + 1e-6]
+                if not len(free):
+                    continue
+                j = np.lexsort((free[:, 0], free[:, 1]))[0]    # leftmost, then lowest
+                if best is None or (free[j, 1], free[j, 0]) < best[0]:
+                    best = ((free[j, 1], free[j, 0]), flip, ang, gb, m)
+            (c0, r0), flip, ang, gb, m = best
+            occ[r0:r0 + m.shape[0], c0:c0 + m.shape[1]] += m
+            placed.append((i, flip, ang, c0 * res - gb[0], r0 * res - gb[1]))
+            length = max(length, c0 + m.shape[1])
+        return length, placed
+
+    base = sorted(range(len(items)), key=lambda i: -sum(q["poly"].area for q in items[i]))
+    orders = [base]
+    for seed in range(64):                  # a few fixed shuffles of the order
+        o, rnd = base[:], random.Random(seed)
+        for _ in range(4):
+            a, b = rnd.randrange(len(o)), rnd.randrange(len(o))
+            o[a], o[b] = o[b], o[a]
+        orders.append(o)
+    _, placed = min((pack(o) for o in orders), key=lambda r: r[0])
+
     out = []
-    for pc, poly, w, h in items:
-        best = None
-        for rot in (0, 90):
-            pw, ph = (w, h) if rot == 0 else (h, w)
-            if ph > ROLL_W:
-                continue
-            cands = [(0.0, 0.0)] + [(r[2] + KERF, r[1]) for r in placed] + \
-                    [(r[0], r[3] + KERF) for r in placed] + [(r[2] + KERF, 0.0) for r in placed]
-            for cx, cy in cands:
-                if cy + ph > ROLL_W + 1e-6:
-                    continue
-                if any(cx < r[2] + KERF - 1e-6 and r[0] < cx + pw + KERF - 1e-6 and
-                       cy < r[3] + KERF - 1e-6 and r[1] < cy + ph + KERF - 1e-6 for r in placed):
-                    continue
-                key = (cx + pw, cy)
-                if best is None or key < best[0]:
-                    best = (key, cx, cy, rot, pw, ph)
-        _, cx, cy, rot, pw, ph = best
-        g = poly if rot == 0 else affinity.translate(affinity.rotate(poly, 90, origin=(0, 0)), h, 0)
-        b = g.bounds
-        g = affinity.translate(g, cx - b[0], cy - b[1])
-        placed.append((cx, cy, cx + pw, cy + ph))
-        out.append((pc, g))
-    length = max(r[2] for r in placed)
-    return out, length
+    for i, flip, ang, dx, dy in placed:
+        for q in items[i]:
+            g = affinity.rotate(affinity.scale(with_holes(q), flip, 1, origin=(0, 0)), ang, origin=(0, 0))
+            out.append((q, affinity.translate(g, dx, dy)))
+    # true-outline check: every piece inside the roll, cut lines >= KERF apart
+    for i, (pa, ga) in enumerate(out):
+        assert ga.bounds[1] > -0.01 and ga.bounds[3] < ROLL_W + 0.01, (pa["tap"], ga.bounds)
+        for pb, gb in out[i + 1:]:
+            assert ga.distance(gb) > KERF - 0.05, (pa["tap"], pb["tap"], ga.distance(gb))
+    x0 = min(g.bounds[0] for _, g in out)
+    out = [(pc, affinity.translate(g, -x0, 0)) for pc, g in out]
+    return out, max(g.bounds[2] for _, g in out)
 
 
 def write_roll_svg(plan, length, top_pieces):

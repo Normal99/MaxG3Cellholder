@@ -82,7 +82,10 @@ There are more one-off shapes than with the old checkerboard. That's the price o
 
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
-* **Roll plan:** `docs/copper_roll_plan.svg` lays out every piece of both faces on a **100 mm wide roll**. One pack uses about **1.4 m of roll**.
+* **Roll plan:** `docs/copper_roll_plan.svg` lays out every piece of both faces on a **100 mm wide roll**. One pack uses about **0.95 m of roll**, so a 1 m roll is enough.
+  * The pieces are nested by their real outlines, so the step shapes interlock.
+  * For each face, the biggest group of pieces that fits across the roll is laid out exactly as it sits on the pack: the top face's B−, B2, B4, B6, B12, B14 and B16, and the bottom face's B7, B9, B11, B13, B15 and B19. The 2.5 mm busbar gap between them is the cut line.
+  * There is only about 5 cm to spare, so print the plan at 100 %, mark the whole roll first, then cut.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
@@ -270,7 +273,7 @@ Then run `sh scad/export.sh`.
 
 ```sh
 pip install shapely                 # one time
-python3 generator/layout.py         # layout -> scad/layout_data.scad + docs/*.svg + docs/layout.md
+python3 generator/layout.py         # layout -> scad/layout_data.scad + docs/*.svg + docs/layout.md (~1 min: roll nesting)
 sh scad/export.sh                   # all STLs into stl/ (OpenSCAD 2021.01+)
 openscad scad/cellholder.scad       # preview, set part = "assembly" / "exploded"
 ```

@@ -26,7 +26,7 @@ Every copper edge is a straight line. Identical letters = identical pieces (a mi
 | B- | 1 | top B0 + 36 x 35 mm lead tongue |
 | B+ | 1 | top B20 + 36 x 35 mm lead tongue |
 
-All pieces fit across a 100 mm copper roll; one pack uses about 1366 mm of roll per copper layer (see copper_roll_plan.svg).
+All pieces fit across a 100 mm copper roll; one pack uses about 944 mm of roll per copper layer (see copper_roll_plan.svg).
 
 Largest voltage step between neighbouring copper pieces on one face: 16 groups (~67 V at full charge).
 
