@@ -42,58 +42,55 @@ Coordinates used everywhere:
 
 The footprint fits a staggered grid of 7 rows (12/11/12/11/12/11/12) at 22.2 mm pitch. That makes **81 slots for 80 cells**. The spare slot is left empty at the divider end and doubles as a wire chase (§4).
 
-There are two kinds of 4p group:
+The layout follows a proven build: **slanted bands in rows 1–4, 3-row blocks in rows 5–7.**
 
-* **Line:** 4 cells in a straight line along a row.
-* **Diamond:** 2 cells in one row and 2 in the row below, offset half a cell.
+* **Rows 1–4:** every 4p group is a **diagonal line of 4**, one cell per row. Two neighbouring diagonals sit side by side along their whole length (7 cell contacts). So every copper piece there is the same **slanted band**, 2 cells wide and 4 rows tall. The series path runs **G1 → G11** away from the divider.
+* **Rows 5–7:** the path comes back, **G12 → G20**, in short 3-row diagonal groups (5–7 cell contacts). The copper pieces there are 3-row blocks.
 
-Either way, **two consecutive groups together make the standard copper piece**: two rows of 4 cells, 97 × 36 mm. That's two lines stacked, or two diamonds side by side. A 36 mm strip cut straight across the 100 mm roll *is* that piece (§ roll plan below).
+**No two consecutive groups ever sit end to end in a row.** That means **single-layer copper everywhere, no double copper**:
 
-**No two consecutive groups ever sit end to end in the same row.** Every series joint touches at 3 to 7 cells. That means **single-layer copper everywhere, no double copper**:
-
-* The narrowest copper bridge between two groups is **~36 mm**.
+* The narrowest copper bridge between two groups is **~66 mm**.
 * An end-to-end joint is only ~14 mm.
 
 | Part of the pack | Groups | Pattern |
 |---|---|---|
-| Divider end | **G1 → G3** (G1 = **B−**, row 1) | G1 is a line; G2 and G3 are 3+1 shapes that fill the end of rows 2–4 |
-| Middle lane, rows 4–5 | **G4 → G6** | Diamonds, away from the divider |
-| | **G7** | Line in row 3, back |
-| Top lane, rows 1–2 | **G8 → G11** | Diamonds, away from the divider |
-| Far end | **G12 → G14** | Lines stacked in rows 3 → 5 |
-| Bottom lane, rows 6–7 | **G15 → G19** | Diamonds, back to the divider |
-| Divider end | **G20** (**B+**) | Rows 5–7 next to the wire chase |
+| Divider end, rows 1–4 | **G1** (**B−**) | Corner triangle |
+| Rows 1–4 | **G2 → G11** | Diagonals, away from the divider |
+| Far end | **G12** | Takes the far-end cells of rows 3–5 |
+| Rows 5–7 | **G13 → G19** | 3-row diagonals, back to the divider |
+| Divider end | **G20** (**B+**) | Rows 6–7, next to the wire chase |
 
-### Copper pieces: one straight bar per row
+### Copper pieces
 
 ![copper cut list](docs/copper_cutlist.svg)
 
-**Each copper piece is a straight bar along each row of cells it covers.**
-
-* Where a piece covers two rows, the two bars are offset by half a cell (that's how the cells are staggered), giving a simple **step shape**.
-* Every edge is a straight, square cut.
+* **Bands (rows 1–4):** straight **slanted (60°) cuts** between the pieces. Every band is the same parallelogram (shape A), 41.5 mm wide with 85.9 mm slanted sides.
+* **Blocks (rows 5–7):** square cuts, one straight bar per row of cells.
 * **Every cell is fully covered.** Each piece only covers the cells of its own groups, so it is easy to see where it goes.
 
-| Shape | Count | Size | What it is |
-|---|---|---|---|
-| **A** | **7** | 97.4 × 36 mm | Standard piece: two 86.3 mm bars, offset 11.1 mm |
-| **B** | **4** | 97.8 × 36 mm | Same, with one end squared off at the pack wall |
-| **C** | **2** | 86.7 × 55.2 mm | Three bars, far end |
-| D–I | 1 each | ~87–97 × 55.2 mm | Three-bar step shapes at the divider end and where the lanes meet |
-| **B−**, **B+** | 1 each | 124 × 36 / 80 × 55 mm | With a **36 × 35 mm lead tongue** (main leads, §5) |
+| Shape | Count | What it is |
+|---|---|---|
+| **A** | **8** | Slanted band, 2 diagonals of 4 cells |
+| **D**, **F** | 1 each | Band squared off at the pack wall (far end / divider end) |
+| **B** | **3** | 3-row block, 8 cells |
+| **C** | **2** | 3-row block, 8 cells (other split) |
+| E, G, H, I | 1 each | Far-end and divider-end blocks |
+| **B−**, **B+** | 1 each | With a **36 × 35 mm lead tongue** (main leads, §5) |
 
-Every piece is straight bars with square cuts. `docs/copper_cutlist.svg` has a 1:1 template for each shape.
+`docs/copper_cutlist.svg` has a 1:1 template for each shape.
 
 **How to prepare the copper:**
 
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
-* **Roll plan: straight strips, no nesting.** One pack uses **98 cm of the 100 mm roll**. `docs/copper_roll_plan.svg` shows the order:
-  1. **Strip 1, 124 mm:** B− and B+ lie side by side along the roll (the tongues make them too long to go across).
-  2. **11 strips of 36 mm:** each one becomes an A or a B piece. The piece is 97.4 mm long, so trim ~2.5 mm off one end and cut the two 11.1 mm corner notches.
-  3. **8 strips of 55 mm:** each one becomes a C–I piece (three bars).
+* **Roll plan:** one pack uses **about 1.3 m of the 100 mm roll**. `docs/copper_roll_plan.svg` shows the order. Every cut is straight:
+  1. **302 mm:** the top face's rows 1–4 (B− and the bands), laid out exactly as on the pack. Cut the section off the roll, then cut the slanted lines between the bands.
+  2. **280 mm:** the top face's rows 5–7 (B+ and the blocks), as on the pack.
+  3. **247 mm:** the bottom face's rows 1–4 (bands).
+  4. **265 mm:** the bottom face's rows 5–7 (blocks).
+  5. **2 × 94 mm:** the two far-end pieces (E, G), one strip each.
 
-  Measure a strip on the roll, cut straight across, and repeat. Then mark each strip from its cut list template.
+  The bands are 74 mm and the blocks 55 mm tall, so a 100 mm roll can't fit two side by side. That makes this layout need **~1.3 m of copper**, more than a 1 m roll.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
@@ -103,8 +100,8 @@ Every piece is straight bars with square cuts. `docs/copper_cutlist.svg` has a 1
   * **Top face:** B0 (G1, main −), then B2, B4 … B18, then B20 (G20, main +). That's 11 pieces.
   * **Bottom face:** B1, B3 … B19. That's 10 pieces.
 * The balance tap number equals the copper piece number. Taps B0–B20 go to BMS balance pins 0–20 (B0 = B−, B20 = B+).
-* **Voltages:** neighbouring copper pieces are at most 18 groups apart (~76 V). The big steps are all along the line between the middle lane (rows 4–5) and the bottom lane (rows 6–7). Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 5 and 6.
-* **No double copper:** every joint is a single layer. The weakest joints are the diamond-to-diamond joints (3 cell contacts, ~36–40 mm of copper across).
+* **Voltages:** neighbouring copper pieces are at most 18 groups apart (~76 V). The big steps are all along the line between rows 4 and 5, on the divider half of the pack. Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 4 and 5.
+* **No double copper:** every joint is a single layer. The weakest joints are in the 3-row blocks (5 cell contacts, ~66 mm of copper across).
 
 To change the layout, edit `GROUP_PATTERN` in `generator/layout.py` and run it again (§10).
 
