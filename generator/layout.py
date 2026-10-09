@@ -105,22 +105,23 @@ nbr = [[j for j in range(N) if j != i and dist(i, j) < PITCH * 1.05]
        for i in range(N)]
 
 # --------------------------------------------------------------------------
-# 20s4p grouping - diagonal bands
+# 20s4p grouping - diagonal bands (same pieces as the reference build)
 #
-# Rows R0-R3 (divider side of the pack, B- end): every group is a DIAGONAL
-# line of 4, one cell per row (R3 -> R0, moving half a cell per row). Two
-# neighbouring diagonals sit side by side over their whole length (7 cell
-# contacts), so every copper piece there is the same slanted band: 2 cells
-# wide, 4 rows tall. The series path runs G1 -> G11 away from the divider.
+# Rows R4-R6 (B- end): the path runs G1 -> G9 away from the divider in
+# short 3-row diagonal groups (5..7 contacts); the copper pieces there are
+# 3-row blocks.
 #
-# Rows R4-R6: the path comes back G12 -> G20 in short 3-row diagonal groups
-# (5..7 contacts); the copper pieces there are 3-row blocks.
+# Rows R0-R3: every group is a DIAGONAL line of 4, one cell per row (R3 ->
+# R0, moving half a cell per row). Two neighbouring diagonals sit side by
+# side over their whole length (7 cell contacts), so every copper piece
+# there is the same slanted band: 2 cells wide, 4 rows tall. The path
+# comes back G10 -> G20 to the divider.
 #
-#   G1        B-, divider end of rows R0-R2
-#   G2-G11    diagonals R3 -> R0, away from the divider
-#   G12-G19   3-row diagonals R4-R6 (G12 also takes the far-end cells of
-#             R2/R3), back to the divider
-#   G20       B+, divider end of rows R5-R6, next to the wire chase
+#   G1        B-, divider end of rows R5-R6, next to the wire chase
+#   G2-G9     3-row diagonals R4-R6, away from the divider (G9 also takes
+#             the far-end cells of R2/R3)
+#   G10-G19   diagonals R3 -> R0, back to the divider
+#   G20       B+, divider end of rows R0-R2
 #
 # Cells are addressed as (R, u): R = row, u = x position in half pitches
 # (even rows: u = 0,2..22, odd rows: u = 1,3..21). The empty slot (screw
@@ -133,17 +134,17 @@ def diagonal(u0):
 
 
 GROUP_PATTERN = (
-    [[(0, 0), (0, 2), (1, 1), (2, 0)]]                               # G1      B-
-    + [diagonal(u) for u in range(1, 20, 2)]                         # G2-G11
-    + [[(2, 22), (3, 21), (4, 18), (4, 20)],                         # G12
-       [(4, 22), (5, 19), (5, 21), (6, 22)],                         # G13
-       [(4, 16), (5, 17), (6, 18), (6, 20)],                         # G14
-       [(4, 12), (4, 14), (5, 15), (6, 16)],                         # G15
-       [(4, 10), (5, 11), (5, 13), (6, 14)],                         # G16
-       [(4, 8), (5, 9), (6, 10), (6, 12)],                           # G17
-       [(4, 4), (4, 6), (5, 7), (6, 8)],                             # G18
-       [(4, 2), (5, 3), (5, 5), (6, 6)],                             # G19
-       [(5, 1), (6, 0), (6, 2), (6, 4)]]                             # G20     B+
+    [[(5, 1), (6, 0), (6, 2), (6, 4)],                               # G1      B-
+     [(4, 2), (5, 3), (5, 5), (6, 6)],                               # G2
+     [(4, 4), (4, 6), (5, 7), (6, 8)],                               # G3
+     [(4, 8), (5, 9), (6, 10), (6, 12)],                             # G4
+     [(4, 10), (5, 11), (5, 13), (6, 14)],                           # G5
+     [(4, 12), (4, 14), (5, 15), (6, 16)],                           # G6
+     [(4, 16), (5, 17), (6, 18), (6, 20)],                           # G7
+     [(4, 22), (5, 19), (5, 21), (6, 22)],                           # G8
+     [(2, 22), (3, 21), (4, 18), (4, 20)]]                           # G9
+    + [diagonal(u) for u in range(19, 0, -2)]                        # G10-G19
+    + [[(0, 0), (0, 2), (1, 1), (2, 0)]]                             # G20     B+
 )
 
 

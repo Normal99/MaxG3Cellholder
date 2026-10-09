@@ -42,10 +42,10 @@ Coordinates used everywhere:
 
 The footprint fits a staggered grid of 7 rows (12/11/12/11/12/11/12) at 22.2 mm pitch. That makes **81 slots for 80 cells**. The spare slot is left empty at the divider end and doubles as a wire chase (§4).
 
-The layout follows a proven build: **slanted bands in rows 1–4, 3-row blocks in rows 5–7.**
+The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands in rows 1–4.** The copper pieces are the same as in that build, and so are B− (next to the empty slot) and B+ (the band corner).
 
-* **Rows 1–4:** every 4p group is a **diagonal line of 4**, one cell per row. Two neighbouring diagonals sit side by side along their whole length (7 cell contacts). So every copper piece there is the same **slanted band**, 2 cells wide and 4 rows tall. The series path runs **G1 → G11** away from the divider.
-* **Rows 5–7:** the path comes back, **G12 → G20**, in short 3-row diagonal groups (5–7 cell contacts). The copper pieces there are 3-row blocks.
+* **Rows 5–7:** the series path runs **G1 → G9** away from the divider in short 3-row diagonal groups (5–7 cell contacts). The copper pieces there are 3-row blocks.
+* **Rows 1–4:** every 4p group is a **diagonal line of 4**, one cell per row. Two neighbouring diagonals sit side by side along their whole length (7 cell contacts). So every copper piece there is the same **slanted band**, 2 cells wide and 4 rows tall. The path comes back **G10 → G20** to the divider.
 
 **No two consecutive groups ever sit end to end in a row.** That means **single-layer copper everywhere, no double copper**:
 
@@ -54,11 +54,11 @@ The layout follows a proven build: **slanted bands in rows 1–4, 3-row blocks i
 
 | Part of the pack | Groups | Pattern |
 |---|---|---|
-| Divider end, rows 1–4 | **G1** (**B−**) | Corner triangle |
-| Rows 1–4 | **G2 → G11** | Diagonals, away from the divider |
-| Far end | **G12** | Takes the far-end cells of rows 3–5 |
-| Rows 5–7 | **G13 → G19** | 3-row diagonals, back to the divider |
-| Divider end | **G20** (**B+**) | Rows 6–7, next to the wire chase |
+| Divider end, rows 6–7 | **G1** (**B−**) | Next to the wire chase |
+| Rows 5–7 | **G2 → G8** | 3-row diagonals, away from the divider |
+| Far end | **G9** | Takes the far-end cells of rows 3–5 |
+| Rows 1–4 | **G10 → G19** | Diagonals, back to the divider |
+| Divider end, rows 1–4 | **G20** (**B+**) | Corner triangle |
 
 ### Copper pieces
 
@@ -84,8 +84,8 @@ The layout follows a proven build: **slanted bands in rows 1–4, 3-row blocks i
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
 * **Roll plan:** one pack uses **about 1.3 m of the 100 mm roll**. `docs/copper_roll_plan.svg` shows the order. Every cut is straight:
-  1. **302 mm:** the top face's rows 1–4 (B− and the bands), laid out exactly as on the pack. Cut the section off the roll, then cut the slanted lines between the bands.
-  2. **280 mm:** the top face's rows 5–7 (B+ and the blocks), as on the pack.
+  1. **302 mm:** the top face's rows 1–4 (B+ and the bands), laid out exactly as on the pack. Cut the section off the roll, then cut the slanted lines between the bands.
+  2. **280 mm:** the top face's rows 5–7 (B− and the blocks), as on the pack.
   3. **247 mm:** the bottom face's rows 1–4 (bands).
   4. **265 mm:** the bottom face's rows 5–7 (blocks).
   5. **2 × 94 mm:** the two far-end pieces (E, G), one strip each.
@@ -158,7 +158,7 @@ You can't solder to the copper once it's welded: the copper soaks up the heat an
 2. **On the bench, with no cells near it:** tin the tongue and solder the lead (10 or 12 AWG silicone) along the outer ~20 mm. A 100 W+ iron or a small torch makes copper easy. Let it cool and slide heat shrink over the joint.
 3. Pre-bend the tongue 90° **downwards** at the x = 0 edge.
 4. Lay the piece on its cells, add the nickel and weld. The joint hangs down the divider-end face of the top holder half, **above the divider**.
-5. **Strain relief:** each tongue folds down through a notch in the BMS dock arm. Zip-tie the lead through the hole pair beside the notch, or through the tie slot in the end wall behind it (y = 32 for B−, y = 109 for B+). That way the lead's weight pulls on the plastic, not on the welds.
+5. **Strain relief:** each tongue folds down through a notch in the BMS dock arm. Zip-tie the lead through the hole pair beside the notch, or through the tie slot in the end wall behind it (y = 109 for B−, y = 32 for B+). That way the lead's weight pulls on the plastic, not on the welds.
 
 **No-solder alternative:** crimp a ring lug on the lead and bolt it to the tongue with M5 or M6 (spring washer + nyloc), outside the pack.
 
