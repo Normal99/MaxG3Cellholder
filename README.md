@@ -42,20 +42,27 @@ Coordinates used everywhere:
 
 The footprint fits a staggered grid of 7 rows (12/11/12/11/12/11/12) at 22.2 mm pitch. That makes **81 slots for 80 cells**. The spare slot is left empty at the divider end and doubles as a wire chase (§4).
 
-**14 of the 20 groups are 4 cells in a straight line along a row.** The other 6 fill the far end and the divider end, where rows are one cell short.
+There are two kinds of 4p group:
 
-**No two consecutive groups ever sit end to end in the same row.** Every series joint is between neighbouring rows and touches at 3 to 7 cells. That means **single-layer copper everywhere, no double copper**:
+* **Line:** 4 cells in a straight line along a row.
+* **Diamond:** 2 cells in one row and 2 in the row below, offset half a cell.
+
+Either way, **two consecutive groups together make the standard copper piece**: two rows of 4 cells, 97 × 36 mm. That's two lines stacked, or two diamonds side by side. A 36 mm strip cut straight across the 100 mm roll *is* that piece (§ roll plan below).
+
+**No two consecutive groups ever sit end to end in the same row.** Every series joint touches at 3 to 7 cells. That means **single-layer copper everywhere, no double copper**:
 
 * The narrowest copper bridge between two groups is **~36 mm**.
-* An end-to-end joint was only ~14 mm.
+* An end-to-end joint is only ~14 mm.
 
 | Part of the pack | Groups | Pattern |
 |---|---|---|
-| Top lane, rows 1–2 | **G1 → G5** (G1 = **B−**, row 1) | Lines alternate row 1 / row 2, each shifted 1.5–2.5 cells (like bricks), running away from the divider |
-| Far-end turn | **G6 → G9** | Short-row cells, 2–3 row shapes, rows 2 → 7 |
-| Bottom lane, rows 6–7 | **G10 → G11** | Back towards the divider |
-| Middle lane, rows 3–5 | **G12 → G16** | Bricks in rows 3 / 4, back to the divider |
-| Divider block | **G17 → G20** (G20 = **B+**, row 7) | G17 fills the end of rows 2–4, then lines stacked rows 5 → 7 |
+| Divider end | **G1 → G3** (G1 = **B−**, row 1) | G1 is a line; G2 and G3 are 3+1 shapes that fill the end of rows 2–4 |
+| Middle lane, rows 4–5 | **G4 → G6** | Diamonds, away from the divider |
+| | **G7** | Line in row 3, back |
+| Top lane, rows 1–2 | **G8 → G11** | Diamonds, away from the divider |
+| Far end | **G12 → G14** | Lines stacked in rows 3 → 5 |
+| Bottom lane, rows 6–7 | **G15 → G19** | Diamonds, back to the divider |
+| Divider end | **G20** (**B+**) | Rows 5–7 next to the wire chase |
 
 ### Copper pieces: one straight bar per row
 
@@ -67,25 +74,26 @@ The footprint fits a staggered grid of 7 rows (12/11/12/11/12/11/12) at 22.2 mm 
 * Every edge is a straight, square cut.
 * **Every cell is fully covered.** Each piece only covers the cells of its own groups, so it is easy to see where it goes.
 
-| Shape | Count | What it is |
-|---|---|---|
-| **A** | **4** | Standard brick piece: two 86.3 mm bars (lines of 4), 36 mm tall, offset 33.3 mm |
-| **B** | **2** | Same, offset 55.5 mm |
-| C, I | 1 each | Brick piece with one end squared off at the pack wall |
-| H, O | 1 each | Two lines stacked almost straight (offset 11.1 mm), divider block |
-| D, E, F, G, J–N | 1 each | Step shapes of 3–4 bars, at the far-end turn and the divider end |
-| **B−**, **B+** | 1 each | With a **36 × 35 mm lead tongue** (main leads, §5) |
+| Shape | Count | Size | What it is |
+|---|---|---|---|
+| **A** | **7** | 97.4 × 36 mm | Standard piece: two 86.3 mm bars, offset 11.1 mm |
+| **B** | **4** | 97.8 × 36 mm | Same, with one end squared off at the pack wall |
+| **C** | **2** | 86.7 × 55.2 mm | Three bars, far end |
+| D–I | 1 each | ~87–97 × 55.2 mm | Three-bar step shapes at the divider end and where the lanes meet |
+| **B−**, **B+** | 1 each | 124 × 36 / 80 × 55 mm | With a **36 × 35 mm lead tongue** (main leads, §5) |
 
-There are more one-off shapes than with the old checkerboard. That's the price of getting rid of the end-to-end strips. Every piece is still made of straight bars with square cuts, and `docs/copper_cutlist.svg` has a 1:1 template for each one.
+Every piece is straight bars with square cuts. `docs/copper_cutlist.svg` has a 1:1 template for each shape.
 
 **How to prepare the copper:**
 
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
-* **Roll plan:** `docs/copper_roll_plan.svg` lays out every piece of both faces on a **100 mm wide roll**. One pack uses about **0.95 m of roll**, so a 1 m roll is enough.
-  * The pieces are nested by their real outlines, so the step shapes interlock.
-  * For each face, the biggest group of pieces that fits across the roll is laid out exactly as it sits on the pack: the top face's B−, B2, B4, B6, B12, B14 and B16, and the bottom face's B7, B9, B11, B13, B15 and B19. The 2.5 mm busbar gap between them is the cut line.
-  * There is only about 5 cm to spare, so print the plan at 100 %, mark the whole roll first, then cut.
+* **Roll plan: straight strips, no nesting.** One pack uses **98 cm of the 100 mm roll**. `docs/copper_roll_plan.svg` shows the order:
+  1. **Strip 1, 124 mm:** B− and B+ lie side by side along the roll (the tongues make them too long to go across).
+  2. **11 strips of 36 mm:** each one becomes an A or a B piece. The piece is 97.4 mm long, so trim ~2.5 mm off one end and cut the two 11.1 mm corner notches.
+  3. **8 strips of 55 mm:** each one becomes a C–I piece (three bars).
+
+  Measure a strip on the roll, cut straight across, and repeat. Then mark each strip from its cut list template.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
@@ -95,8 +103,8 @@ There are more one-off shapes than with the old checkerboard. That's the price o
   * **Top face:** B0 (G1, main −), then B2, B4 … B18, then B20 (G20, main +). That's 11 pieces.
   * **Bottom face:** B1, B3 … B19. That's 10 pieces.
 * The balance tap number equals the copper piece number. Taps B0–B20 go to BMS balance pins 0–20 (B0 = B−, B20 = B+).
-* **Voltages:** neighbouring copper pieces are at most 16 groups apart (~67 V). The big steps are all along the line between the top lane (rows 1–2) and the middle lane (rows 3–4). Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 2 and 3.
-* **No double copper:** every joint is a single layer. The weakest joints are the 3-contact brick steps (~36 mm of copper across).
+* **Voltages:** neighbouring copper pieces are at most 18 groups apart (~76 V). The big steps are all along the line between the middle lane (rows 4–5) and the bottom lane (rows 6–7). Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 5 and 6.
+* **No double copper:** every joint is a single layer. The weakest joints are the diamond-to-diamond joints (3 cell contacts, ~36–40 mm of copper across).
 
 To change the layout, edit `GROUP_PATTERN` in `generator/layout.py` and run it again (§10).
 
@@ -273,7 +281,7 @@ Then run `sh scad/export.sh`.
 
 ```sh
 pip install shapely                 # one time
-python3 generator/layout.py         # layout -> scad/layout_data.scad + docs/*.svg + docs/layout.md (~1 min: roll nesting)
+python3 generator/layout.py         # layout -> scad/layout_data.scad + docs/*.svg + docs/layout.md
 sh scad/export.sh                   # all STLs into stl/ (OpenSCAD 2021.01+)
 openscad scad/cellholder.scad       # preview, set part = "assembly" / "exploded"
 ```
