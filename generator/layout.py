@@ -5,7 +5,7 @@ Layout generator for the Segway Ninebot Max G3 20s4p 21700 cell holder.
 Computes, from the envelope / pitch / screw-post parameters below:
   * the staggered (hex) cell grid                     -> 81 slots, 80 cells
   * which slot is left empty for the screw post       -> also used as wire chase
-  * the 20s4p series groups (uniform 2x2 diamonds, see GROUP_PATTERN)
+  * the 20s4p series groups (diagonal bands, see GROUP_PATTERN)
   * the copper busbar pieces for the top and bottom face: rectangles (or an
     L of two rectangles) only, and a cutting plan for a 100 mm copper roll
   * balance-tab and main-lead positions, punch hole over every cell
@@ -31,7 +31,7 @@ import math
 import os
 
 from shapely import affinity
-from shapely.geometry import MultiPoint, Point, box
+from shapely.geometry import MultiPoint, Point, Polygon, box
 from shapely.ops import unary_union, voronoi_diagram
 
 # --------------------------------------------------------------------------
@@ -59,7 +59,10 @@ LEAD_W = 40.0              # max main lead tongue width (B-, B+); limited by the
 LEAD_LEN = 35.0            # how far the tongue sticks out past the divider end
 ROLL_W = 100.0             # width of the copper roll the pieces are cut from
 PUNCH_D = 8.0              # hole punched in the copper over every cell (nickel welds through it)
-KERF = 2.0                 # spacing between pieces on the roll plan
+KERF = 2.0                 # spacing between pieces cut from one strip
+STRIP_CUT = 1.0            # allowance for one straight cut across the roll
+ROW_LEAN = (-1, -1, -1, -1, 0, 0, 0)   # per row: copper cut between cells 0 = square, +-1 = 60 deg
+BAND_ROWS = 4              # rows R0.. that hold the slanted bands (cut together per face)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -102,36 +105,46 @@ nbr = [[j for j in range(N) if j != i and dist(i, j) < PITCH * 1.05]
        for i in range(N)]
 
 # --------------------------------------------------------------------------
-# 20s4p grouping - uniform "diamond" bands (easy to cut, repeatable copper)
+# 20s4p grouping - diagonal bands (same pieces as the reference build)
 #
-# Almost every group is the same compact 2 x 2 diamond (2 cells in one row,
-# 2 in the next), so almost every copper piece is the SAME rectangle
-# (two diamonds side by side, 80.9 x 36 mm).
+# Rows R4-R6 (B- end): the path runs G1 -> G9 away from the divider in
+# short 3-row diagonal groups (5..7 contacts); the copper pieces there are
+# 3-row blocks.
 #
-#   rows R0-R1  G1  -> G5    out   (diamonds)      B- = G1 at the divider
-#   far end     G6           turn
-#   rows R2-R3  G7  -> G11   back  (diamonds)
-#   divider end G12          turn
-#   rows R4-R5  G13 -> G17   out   (diamonds)
-#   row  R6     G18 -> G20   back  (4 cells in a line) B+ = G20 at the divider
+# Rows R0-R3: every group is a DIAGONAL line of 4, one cell per row (R3 ->
+# R0, moving half a cell per row). Two neighbouring diagonals sit side by
+# side over their whole length (7 cell contacts), so every copper piece
+# there is the same slanted band: 2 cells wide, 4 rows tall. The path
+# comes back G10 -> G20 to the divider.
 #
-# 7 rows can never be split into 2-row bands only, so the last row is a
-# straight strip of single-row groups (double the copper on those 2 strips).
-# Neighbouring bands are 5-11 groups apart (max ~46 V) instead of the full
-# pack voltage of a two-lane U.
+#   G1        B-, divider end of rows R5-R6, next to the wire chase
+#   G2-G9     3-row diagonals R4-R6, away from the divider (G9 also takes
+#             the far-end cells of R2/R3)
+#   G10-G19   diagonals R3 -> R0, back to the divider
+#   G20       B+, divider end of rows R0-R2
 #
 # Cells are addressed as (R, u): R = row, u = x position in half pitches
 # (even rows: u = 0,2..22, odd rows: u = 1,3..21). The empty slot (screw
 # post / wire chase) is (R4, u0). If the post is measured from the other
 # side wall the pattern is mirrored (R -> 6 - R).
 # --------------------------------------------------------------------------
+def diagonal(u0):
+    """4 cells, one per row, from (R3, u0) up to (R0, u0 + 3)."""
+    return [(3 - k, u0 + k) for k in range(4)]
+
+
 GROUP_PATTERN = (
-    [[(0, u), (0, u + 2), (1, u + 1), (1, u + 3)] for u in (0, 4, 8, 12, 16)]       # G1-G5
-    + [[(0, 20), (0, 22), (1, 21), (2, 22)]]                                         # G6
-    + [[(2, u), (2, u + 2), (3, u + 1), (3, u + 3)] for u in (18, 14, 10, 6, 2)]     # G7-G11
-    + [[(2, 0), (3, 1), (4, 2), (5, 1)]]                                             # G12
-    + [[(4, u), (4, u + 2), (5, u - 1), (5, u + 1)] for u in (4, 8, 12, 16, 20)]     # G13-G17
-    + [[(6, u), (6, u + 2), (6, u + 4), (6, u + 6)] for u in (16, 8, 0)]             # G18-G20
+    [[(5, 1), (6, 0), (6, 2), (6, 4)],                               # G1      B-
+     [(4, 2), (5, 3), (5, 5), (6, 6)],                               # G2
+     [(4, 4), (4, 6), (5, 7), (6, 8)],                               # G3
+     [(4, 8), (5, 9), (6, 10), (6, 12)],                             # G4
+     [(4, 10), (5, 11), (5, 13), (6, 14)],                           # G5
+     [(4, 12), (4, 14), (5, 15), (6, 16)],                           # G6
+     [(4, 16), (5, 17), (6, 18), (6, 20)],                           # G7
+     [(4, 22), (5, 19), (5, 21), (6, 22)],                           # G8
+     [(2, 22), (3, 21), (4, 18), (4, 20)]]                           # G9
+    + [diagonal(u) for u in range(19, 0, -2)]                        # G10-G19
+    + [[(0, 0), (0, 2), (1, 1), (2, 0)]]                             # G20     B+
 )
 
 
@@ -237,9 +250,23 @@ def build_copper(pcs, face):
         for j, (x, k) in enumerate(slots_r):
             if k in (None, "chase"):
                 continue
-            lo = x_lo if j == 0 else (slots_r[j - 1][0] + x) / 2
-            hi = x_hi if j == len(slots_r) - 1 else (x + slots_r[j + 1][0]) / 2
-            raw[k].append(box(lo, yb, hi, yt))
+            # cut between two cells of a row: straight up (lean 0) or along
+            # the 60 deg lattice line (lean +-1), so diagonal groups get
+            # straight slanted edges instead of steps; pack walls stay square
+            t = ROW_LEAN[r] * math.tan(math.radians(30))
+            yc = Y0 + r * ROW_H
+            if j == 0:
+                lb, lt = x_lo, x_lo
+            else:
+                m = (slots_r[j - 1][0] + x) / 2
+                lb, lt = m + t * (yb - yc), m + t * (yt - yc)
+            if j == len(slots_r) - 1:
+                hb, ht = x_hi, x_hi
+            else:
+                m = (x + slots_r[j + 1][0]) / 2
+                hb, ht = m + t * (yb - yc), m + t * (yt - yc)
+            tile = Polygon([(lb, yb), (hb, yb), (ht, yt), (lt, yt)])
+            raw[k].append(tile.intersection(box(x_lo, yb, x_hi, yt)))
     for k, pc in enumerate(pcs):
         # pieces touch edge to edge; shrinking each by half a gap leaves one
         # busbar gap everywhere and keeps every edge square
@@ -254,8 +281,10 @@ def build_copper(pcs, face):
         pc = pcs[k]
         strip = pc["poly"].intersection(box(WALL_IN, 0, WALL_IN + 3, PACK_W))
         y0, y1 = strip.bounds[1], strip.bounds[3]
-        w = min(LEAD_W, y1 - y0)   # full width of the piece's end, no step
-        yc = (y0 + y1) / 2
+        # two rows wide (no step), against the outer side wall: the BMS dock's
+        # lead notches sit there
+        w = min(LEAD_W, y1 - y0, 2 * ROW_H - BUSBAR_GAP)
+        yc = y0 + w / 2 if (y0 + y1) / 2 < PACK_W / 2 else y1 - w / 2
         pc["lead_y"], pc["lead_w"] = yc, w
         pc["poly"] = unary_union([pc["poly"], box(-LEAD_LEN, yc - w / 2, WALL_IN + 0.5, yc + w / 2)])
 
@@ -473,7 +502,7 @@ def main():
                 if p1 is not p2 and p1["poly"].distance(p2["poly"]) < BUSBAR_GAP + 1:
                     maxdv = max(maxdv, abs(p1["tap"] - p2["tap"]))
     print("largest voltage step between neighbouring pieces:", maxdv, "taps")
-    plan, roll_len = roll_plan(top_pieces + bot_pieces)
+    plan, roll_len = roll_plan([top_pieces, bot_pieces])
     print(f"copper roll: {ROLL_W:.0f} mm wide x {roll_len:.0f} mm long")
     write_roll_svg(plan, roll_len, top_pieces)
     write_svgs(groups, assign, pol_up, top_pieces, bot_pieces, chase, post, types)
@@ -659,44 +688,83 @@ def flap_poly(pc):
     return slot_poly(x, y, pc["tab_a"], (TAB_W, TAB_SLOT[0]))
 
 
-def roll_plan(all_pcs):
-    """Bottom-left packing of every copper piece on a ROLL_W wide roll.
-    Returns placements [(pc, placed_polygon)] and the roll length used."""
-    items = []
-    for pc in all_pcs:
-        poly = with_holes(pc)
-        b = poly.bounds
-        w, h = b[2] - b[0], b[3] - b[1]
-        assert min(w, h) <= ROLL_W - KERF, ("piece wider than the roll", pc["tap"])
-        items.append((pc, affinity.translate(poly, -b[0], -b[1]), w, h))
-    items.sort(key=lambda it: -it[2] * it[3])
-    placed = []   # (x1, y1, x2, y2)
-    out = []
-    for pc, poly, w, h in items:
-        best = None
-        for rot in (0, 90):
-            pw, ph = (w, h) if rot == 0 else (h, w)
-            if ph > ROLL_W:
+def roll_plan(faces):
+    """Cutting plan for a ROLL_W wide roll, straight cuts only.
+    1. Per face, the pieces of rows R0..R(BAND_ROWS-1) (the slanted bands),
+       and those of the rows after them, are cut from one strip each, laid
+       out exactly as on the pack: cut the strip off the roll, then cut the
+       lines between the pieces (only where that saves roll).
+    2. Every other piece gets its own strip across the roll (strip width =
+       piece height). A piece too long to go across lies along the roll,
+       with the piece that saves the most roll next to it.
+    Returns placements [(pc, placed_polygon)] and the length; each pc gets
+    pc["strip"] = (x0, x1) on the roll."""
+    def size(pc):
+        b = pc["poly"].bounds
+        return b[2] - b[0], b[3] - b[1]
+
+    def place(pc, dx, dy, turn):
+        g = with_holes(pc)
+        if turn:                                  # long side across the roll
+            g = affinity.rotate(g, 90, origin=(0, 0))
+            b = g.bounds
+            return affinity.translate(g, dx - b[0], dy - b[1])
+        return affinity.translate(g, dx, dy)
+
+    def strip_len(pc):
+        w, h = size(pc)
+        return h if w <= ROLL_W else w
+
+    # row regions: the bands (R0..) and the rows after them; a region's
+    # pieces are cut as one strip in pack order if that uses less roll
+    cut = Y0 + (BAND_ROWS - 0.5) * ROW_H
+    blocks, rest = [], []                         # block: [(pc, turn, dx, dy)]
+    for pcs in faces:
+        for lo, hi in ((-1e9, cut + 0.01), (cut - 0.01, 1e9)):
+            reg = [pc for pc in pcs if lo <= pc["poly"].bounds[1] and pc["poly"].bounds[3] <= hi]
+            if not reg:
                 continue
-            cands = [(0.0, 0.0)] + [(r[2] + KERF, r[1]) for r in placed] + \
-                    [(r[0], r[3] + KERF) for r in placed] + [(r[2] + KERF, 0.0) for r in placed]
-            for cx, cy in cands:
-                if cy + ph > ROLL_W + 1e-6:
-                    continue
-                if any(cx < r[2] + KERF - 1e-6 and r[0] < cx + pw + KERF - 1e-6 and
-                       cy < r[3] + KERF - 1e-6 and r[1] < cy + ph + KERF - 1e-6 for r in placed):
-                    continue
-                key = (cx + pw, cy)
-                if best is None or key < best[0]:
-                    best = (key, cx, cy, rot, pw, ph)
-        _, cx, cy, rot, pw, ph = best
-        g = poly if rot == 0 else affinity.translate(affinity.rotate(poly, 90, origin=(0, 0)), h, 0)
-        b = g.bounds
-        g = affinity.translate(g, cx - b[0], cy - b[1])
-        placed.append((cx, cy, cx + pw, cy + ph))
-        out.append((pc, g))
-    length = max(r[2] for r in placed)
-    return out, length
+            x0 = min(pc["poly"].bounds[0] for pc in reg)
+            y0 = min(pc["poly"].bounds[1] for pc in reg)
+            x1 = max(pc["poly"].bounds[2] for pc in reg)
+            y1 = max(pc["poly"].bounds[3] for pc in reg)
+            if y1 - y0 <= ROLL_W and x1 - x0 < sum(strip_len(pc) for pc in reg):
+                blocks.append([(pc, False, -x0, -y0) for pc in reg])
+            else:
+                rest += reg
+        rest += [pc for pc in pcs if pc not in rest and not any(pc is q for b in blocks for q, *_ in b)]
+    rest.sort(key=lambda pc: (pc["shape"].ljust(3), pc["tap"]))
+    for pc in rest:
+        assert min(size(pc)) <= ROLL_W, ("piece wider than the roll", pc["tap"])
+    for pc in [q for q in rest if size(q)[0] > ROLL_W]:
+        if pc not in rest:
+            continue
+        rest.remove(pc)
+        w, h = size(pc)
+        b = pc["poly"].bounds
+        blk = [(pc, False, -b[0], -b[1])]
+        side = [q for q in rest if size(q)[1] <= ROLL_W - h - KERF and size(q)[0] <= w]
+        side.sort(key=lambda q: -(size(q)[0] if size(q)[0] > ROLL_W else size(q)[1]))
+        if side:
+            rest.remove(side[0])
+            qb = side[0]["poly"].bounds
+            blk.append((side[0], False, -qb[0], h + KERF - qb[1]))
+        blocks.append(blk)
+    blocks += [[(pc, True, 0.0, 0.0)] for pc in rest]
+    out, x = [], 0.0
+    for blk in blocks:
+        geo = [(pc, place(pc, dx, dy, turn)) for pc, turn, dx, dy in blk]
+        ln = max(g.bounds[2] for _, g in geo) - min(g.bounds[0] for _, g in geo)
+        sx = x - min(g.bounds[0] for _, g in geo)
+        for pc, g in geo:
+            out.append((pc, affinity.translate(g, sx, 0)))
+            pc["strip"] = (x, x + ln)
+        x += ln + STRIP_CUT
+    for i, (pa, ga) in enumerate(out):
+        assert ga.bounds[1] > -0.01 and ga.bounds[3] < ROLL_W + 0.01, (pa["tap"], ga.bounds)
+        for pb, gb in out[i + 1:]:
+            assert ga.distance(gb) > min(STRIP_CUT, BUSBAR_GAP) - 0.05, (pa["tap"], pb["tap"])
+    return out, x - STRIP_CUT
 
 
 def write_roll_svg(plan, length, top_pieces):
@@ -706,9 +774,17 @@ def write_roll_svg(plan, length, top_pieces):
            '<rect x="-5" y="-30" width="100%" height="100%" fill="white"/>',
            f'<text x="0" y="-18" font-size="6" font-weight="bold">Copper roll cutting plan - {ROLL_W:.0f} mm roll, '
            f'{length:.0f} mm long for one pack (1:1)</text>',
-           '<text x="0" y="-9" font-size="4">Every piece of both faces. Label = shape letter + tap. '
-           'Mark the lines on the copper, cut, then compare each piece with copper_top / copper_bottom.</text>',
+           '<text x="0" y="-9" font-size="4">Cut the roll straight across into the sections below, left to right '
+           '(number = section length). Multi-piece sections are laid out as on the pack: cut between the pieces.</text>',
            f'<rect x="0" y="0" width="{length:.1f}" height="{ROLL_W}" fill="#f7e3cf" stroke="#b5651d" stroke-width="0.6"/>']
+    strips = sorted({pc["strip"] for pc, _ in plan})
+    for n, (x0, x1) in enumerate(strips):
+        if n < len(strips) - 1:
+            xc = x1 + STRIP_CUT / 2
+            out.append(f'<line x1="{xc:.1f}" y1="-4" x2="{xc:.1f}" y2="{ROLL_W + 4}" stroke="red" '
+                       'stroke-width="0.4" stroke-dasharray="2,1"/>')
+        out.append(f'<text x="{(x0 + x1) / 2:.1f}" y="-1.5" font-size="3.5" text-anchor="middle" fill="red">'
+                   f'{n + 1}: {x1 - x0:.0f}</text>')
     for pc, g in plan:
         face = "top" if pc in top_pieces else "bottom"
         out.append(svg_poly(g, fill="white", fill_opacity="0.6", stroke="black", stroke_width="0.35"))
