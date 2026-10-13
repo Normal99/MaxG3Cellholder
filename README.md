@@ -18,8 +18,9 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 |---|---|
 | `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each. Bottom is 270 mm long; top with BMS dock is 315 mm, so it needs a big bed. |
 | `stl/holder_*_a.stl` / `_b.stl` | **The same halves split in two, for normal beds.** Every part fits a 256 × 256 bed (largest: `holder_top_a`, 214 × 141 mm, with the BMS dock). The two parts **lock together through 7 shared cell sockets** (§7). |
+| `docs/copper_cutting_guide.pdf` | **Print this to cut the copper:** black-and-white A4 cutting guide at 1:1. The roll pages tape together into one 100 mm strip that you lay on the roll and cut through, plus 1:1 placement maps of both faces |
 | `docs/copper_cutlist.svg` | **Copper cut list:** every distinct copper shape once, 1:1, with count, edge lengths and punch holes |
-| `docs/copper_roll_plan.svg` | Every copper piece laid out on a **100 mm wide roll** |
+| `docs/copper_roll_plan.svg` | Every copper piece nested on a **100 mm wide roll** (the same plan as the PDF, in one picture) |
 | `docs/copper_top.svg`, `docs/copper_bottom.svg` | 1:1 position of every copper piece on each face, with punch holes, tab flaps and tongue fold lines |
 | `docs/wiring_top.svg`, `docs/wiring_bottom.svg` | Wiring diagrams: group numbers, cell polarity, copper pieces and balance taps |
 | `docs/layout.md` | Cut list table, plus every group, cell and copper piece |
@@ -64,33 +65,33 @@ The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands i
 
 ![copper cut list](docs/copper_cutlist.svg)
 
-* **Bands (rows 1–4):** straight **slanted (60°) cuts** between the pieces. Every band is the same parallelogram (shape A), 41.5 mm wide with 85.9 mm slanted sides.
-* **Blocks (rows 5–7):** square cuts, one straight bar per row of cells.
-* **Every cell is fully covered.** Each piece only covers the cells of its own groups, so it is easy to see where it goes.
+* **Cell outlines:** every piece follows its cells, like the reference build. It is a ring of copper around each cell (20 mm across, the welding window is 17 mm) with a 14 mm bridge to each neighbouring cell of the piece.
+  * Electrically this costs little: the narrowest joint is still **~63 mm** of copper across.
+  * The scalloped edges let the pieces lock into each other on the roll, which is what makes them fit a 1 m roll (below).
+* **Rows 1–4:** every band is the same piece (shape A). **Rows 5–7:** the 3-row blocks.
 
 | Shape | Count | What it is |
 |---|---|---|
 | **A** | **8** | Slanted band, 2 diagonals of 4 cells |
-| **D**, **F** | 1 each | Band squared off at the pack wall (far end / divider end) |
 | **B** | **3** | 3-row block, 8 cells |
 | **C** | **2** | 3-row block, 8 cells (other split) |
-| E, G, H, I | 1 each | Far-end and divider-end blocks |
+| D–I | 1 each | Far-end and divider-end pieces |
 | **B−**, **B+** | 1 each | With a **36 × 35 mm lead tongue** (main leads, §5) |
 
-`docs/copper_cutlist.svg` has a 1:1 template for each shape.
+`docs/copper_cutlist.svg` has a 1:1 template for each shape. To go back to full-area pieces with straight cuts, set `COPPER_STYLE = "full"` in `generator/layout.py`.
 
 **How to prepare the copper:**
 
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
-* **Roll plan:** one pack uses **about 1.3 m of the 100 mm roll**. `docs/copper_roll_plan.svg` shows the order. Every cut is straight:
-  1. **302 mm:** the top face's rows 1–4 (B+ and the bands), laid out exactly as on the pack. Cut the section off the roll, then cut the slanted lines between the bands.
-  2. **280 mm:** the top face's rows 5–7 (B− and the blocks), as on the pack.
-  3. **247 mm:** the bottom face's rows 1–4 (bands).
-  4. **265 mm:** the bottom face's rows 5–7 (blocks).
-  5. **2 × 94 mm:** the two far-end pieces (E, G), one strip each.
+* **Cutting guide: one pack uses 90 cm of the 100 mm roll.** Print `docs/copper_cutting_guide.pdf` on A4 in black and white, at **100 % / "Actual size"** (not "fit to page"). Check the 100 mm bar with a ruler.
+  1. **Pages 2–5 are the roll, 1:1.** Cut each page along its dashed JOIN lines and butt them together in order. The mm scale along the roll edge runs on from page to page. Tape them on the back.
+  2. Lay the strip on the copper with the thick **ROLL EDGE** lines on the copper edges, and glue or tape it down.
+  3. Cut out every piece along its outline, paper and copper together.
+  4. Punch 8 mm at every circle (+ marks the centre), and cut the 3 sides of each small **TAB** rectangle (§6). The B− / B+ tongues fold along the dashed **FOLD** line.
+  5. Leave the paper on until the piece is placed. Each label says the piece (B0–B20) and the face. Pages 6–7 are 1:1 maps of both faces showing where each piece goes.
 
-  The bands are 74 mm and the blocks 55 mm tall, so a 100 mm roll can't fit two side by side. That makes this layout need **~1.3 m of copper**, more than a 1 m roll.
+  All 21 pieces are nested on the roll by their real outlines, turned in 30° steps and either side up, with 1 mm between cut lines. That leaves **~10 cm of the 1 m roll spare**.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
@@ -277,11 +278,13 @@ Then run `sh scad/export.sh`.
 ## 10. Regenerating / customising
 
 ```sh
-pip install shapely                 # one time
-python3 generator/layout.py         # layout -> scad/layout_data.scad + docs/*.svg + docs/layout.md
+pip install shapely cairocffi       # one time (cairocffi: the PDF cutting guide)
+python3 generator/layout.py         # layout -> scad/layout_data.scad + docs/*.svg + docs/*.pdf + docs/layout.md
 sh scad/export.sh                   # all STLs into stl/ (OpenSCAD 2021.01+)
 openscad scad/cellholder.scad       # preview, set part = "assembly" / "exploded"
 ```
+
+When the copper pieces change, the roll nesting search runs again (a few minutes). Its result is cached in `generator/roll_nest.json`, so later runs take about a second.
 
 Parameters live in two places:
 
@@ -289,6 +292,7 @@ Parameters live in two places:
   * envelope (`PACK_L`, `PACK_W`) and `PITCH`
   * the screw post (`POST_FROM_SIDE`, `POST_FROM_DIVIDER`, `POST_D`, `POST_H`)
   * copper gap, punch hole size (`PUNCH_D`), lead tongue size (`LEAD_W`, `LEAD_LEN`) and roll width (`ROLL_W`)
+  * copper style (`COPPER_STYLE`, `RING_R`, `BRIDGE_W`) and roll nesting (`KERF`, `NEST_ANGLES`, `NEST_TRIES`)
   * the group pattern (`GROUP_PATTERN`)
 * **`scad/cellholder.scad`:**
   * cell size and bore, welding window, cell recess, socket depth, tie slots
