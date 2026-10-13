@@ -6,8 +6,9 @@ Computes, from the envelope / pitch / screw-post parameters below:
   * the staggered (hex) cell grid                     -> 81 slots, 80 cells
   * which slot is left empty for the screw post       -> also used as wire chase
   * the 20s4p series groups (diagonal bands, see GROUP_PATTERN)
-  * the copper busbar pieces for the top and bottom face: rectangles (or an
-    L of two rectangles) only, and a cutting plan for a 100 mm copper roll
+  * the copper busbar pieces for the top and bottom face (cell outlines:
+    a ring round every cell + bridges, see COPPER_STYLE), nested on a
+    100 mm copper roll, and a printable A4 cutting guide
   * balance-tab and main-lead positions, punch hole over every cell
   * split line for printers whose bed is < 270 mm
 
@@ -19,9 +20,11 @@ and writes:
   docs/copper_bottom.svg     1:1 copper cutting template, bottom face
   docs/copper_cutlist.svg    one 1:1 drawing per distinct copper shape + count
   docs/copper_roll_plan.svg  all pieces nested on the copper roll (ROLL_W wide)
+  docs/copper_cutting_guide.pdf  the roll plan as A4 pages at 1:1 + face maps
   docs/layout.md             group / busbar / tab table, cut list
+  generator/roll_nest.json   cached roll nesting (redone when the pieces change)
 
-Run:  python3 generator/layout.py        (needs: pip install shapely)
+Run:  python3 generator/layout.py        (needs: pip install shapely cairocffi)
 
 Coordinates: x along the 270 mm length, x = 0 is the DIVIDER end.
              y across the 141 mm width, y = 0 is the deck side wall that the
@@ -31,7 +34,7 @@ import math
 import os
 
 from shapely import affinity
-from shapely.geometry import MultiPoint, Point, Polygon, box
+from shapely.geometry import LineString, MultiPoint, Point, Polygon, box
 from shapely.ops import unary_union, voronoi_diagram
 
 # --------------------------------------------------------------------------
@@ -59,10 +62,14 @@ LEAD_W = 40.0              # max main lead tongue width (B-, B+); limited by the
 LEAD_LEN = 35.0            # how far the tongue sticks out past the divider end
 ROLL_W = 100.0             # width of the copper roll the pieces are cut from
 PUNCH_D = 8.0              # hole punched in the copper over every cell (nickel welds through it)
-KERF = 2.0                 # spacing between pieces cut from one strip
-STRIP_CUT = 1.0            # allowance for one straight cut across the roll
+KERF = 1.0                 # gap between pieces on the roll (one scissor cut each)
 ROW_LEAN = (-1, -1, -1, -1, 0, 0, 0)   # per row: copper cut between cells 0 = square, +-1 = 60 deg
-BAND_ROWS = 4              # rows R0.. that hold the slanted bands (cut together per face)
+COPPER_STYLE = "outline"   # "outline": ring round every cell + bridges, "full": whole area
+RING_R = 10.0              # outline style: copper radius round a cell (welding window r = 8.5)
+BRIDGE_W = 14.0            # outline style: width of the bridge between neighbouring cells
+NEST_ANGLES = 30           # roll plan: piece rotations tried, every N degrees
+NEST_TRIES = 40            # roll plan: shuffled piece orders tried (result cached)
+GUIDE_SEG = 255.0          # cutting guide: mm of roll per A4 page
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -217,10 +224,11 @@ def lat_key(slot):
 
 
 def build_copper(pcs, face):
-    """Copper pieces = one straight bar per row of cells (an L / step shape
+    """Full copper pieces = one bar per row of cells (an L / step shape
     where a piece covers two rows). Each bar runs halfway to the next cell of
     another piece in that row, so every cell is fully covered; neighbouring
-    pieces are then pulled apart by one busbar gap. Empty end spots of the
+    pieces are then pulled apart by one busbar gap. With COPPER_STYLE = "outline"
+    each piece is then trimmed to its cell outlines (outline_copper). Empty end spots of the
     short rows go to the B-/B+ pieces next to them (wider lead tongues), the
     empty chase slot gets no copper (balance wires pass through it)."""
     owner = {}
@@ -288,6 +296,10 @@ def build_copper(pcs, face):
         pc["lead_y"], pc["lead_w"] = yc, w
         pc["poly"] = unary_union([pc["poly"], box(-LEAD_LEN, yc - w / 2, WALL_IN + 0.5, yc + w / 2)])
 
+    if COPPER_STYLE == "outline":
+        for pc in pcs:
+            pc["poly"] = outline_copper(pc)
+
     # checks: gap between pieces, and no copper over another piece's window
     for k, pc in enumerate(pcs):
         for j in range(k + 1, len(pcs)):
@@ -298,6 +310,25 @@ def build_copper(pcs, face):
             if i not in mine:
                 d = pc["poly"].distance(Point(pos[i]))
                 assert d > WINDOW_D / 2 + 0.5, (face, pc["tap"], i, d)
+
+
+def outline_copper(pc):
+    """Trim a piece to the cell outlines: a ring of RING_R round every cell
+    plus a BRIDGE_W wide bridge to every neighbouring cell of the piece
+    (that also fills the middle of each 3-cell triangle). Stays inside the
+    full piece, so all gaps and window clearances still hold. The scalloped
+    edges let the pieces lock into each other on the roll; a lead piece
+    keeps its tongue and the solid copper from the tongue to its cells."""
+    cells = pc["cells"]
+    parts = [Point(pos[i]).buffer(RING_R, quad_segs=16) for i in cells]
+    parts += [LineString([pos[a], pos[b]]).buffer(BRIDGE_W / 2, cap_style=2)
+              for a in cells for b in nbr[a] if a < b and b in cells]
+    if "lead_y" in pc:
+        parts.append(box(-LEAD_LEN - 1, -1, X0, PACK_W + 1))
+    g = unary_union(parts).intersection(pc["poly"]).buffer(0.01).buffer(-0.01)
+    if g.geom_type != "Polygon":
+        raise SystemExit(f"B{pc['tap']} outline copper is not one piece")
+    return Polygon(g.exterior).simplify(0.01)
 
 
 def pick_tab(pc, face):
@@ -505,6 +536,7 @@ def main():
     plan, roll_len = roll_plan([top_pieces, bot_pieces])
     print(f"copper roll: {ROLL_W:.0f} mm wide x {roll_len:.0f} mm long")
     write_roll_svg(plan, roll_len, top_pieces)
+    write_guide_pdf(plan, roll_len, top_pieces, bot_pieces, assign, pol_up)
     write_svgs(groups, assign, pol_up, top_pieces, bot_pieces, chase, post, types)
     write_md(groups, assign, pol_up, top_pieces, bot_pieces, contact, types, maxdv, roll_len)
     print("chase slot (empty, screw post / wire chase):", (round(chase[2], 1), round(chase[3], 1)))
@@ -689,82 +721,124 @@ def flap_poly(pc):
 
 
 def roll_plan(faces):
-    """Cutting plan for a ROLL_W wide roll, straight cuts only.
-    1. Per face, the pieces of rows R0..R(BAND_ROWS-1) (the slanted bands),
-       and those of the rows after them, are cut from one strip each, laid
-       out exactly as on the pack: cut the strip off the roll, then cut the
-       lines between the pieces (only where that saves roll).
-    2. Every other piece gets its own strip across the roll (strip width =
-       piece height). A piece too long to go across lies along the roll,
-       with the piece that saves the most roll next to it.
-    Returns placements [(pc, placed_polygon)] and the length; each pc gets
-    pc["strip"] = (x0, x1) on the roll."""
-    def size(pc):
-        b = pc["poly"].bounds
-        return b[2] - b[0], b[3] - b[1]
+    """Nest every copper piece of both faces on a ROLL_W wide roll by its
+    real outline (the scalloped outline pieces lock into each other).
+    Greedy fill on a 0.5 mm raster (FFT overlap test), every NEST_ANGLES
+    degrees, either side up; the best of NEST_TRIES shuffled piece orders
+    wins. The search takes a minute or two, so the result is cached in
+    generator/roll_nest.json and reused while the pieces stay the same.
+    Returns placements [(pc, placed_polygon)] and the roll length used."""
+    import hashlib
+    import json
+    import random
+    import numpy as np
+    import shapely
 
-    def place(pc, dx, dy, turn):
-        g = with_holes(pc)
-        if turn:                                  # long side across the roll
-            g = affinity.rotate(g, 90, origin=(0, 0))
-            b = g.bounds
-            return affinity.translate(g, dx - b[0], dy - b[1])
-        return affinity.translate(g, dx, dy)
+    pcs = [(f, pc) for f, face in zip("TB", faces) for pc in face]
+    outl = [Polygon(pc["poly"].exterior) for _, pc in pcs]
+    key = hashlib.sha1(json.dumps([ROLL_W, KERF, NEST_ANGLES, NEST_TRIES] + [
+        [f, pc["tap"], [[round(x, 2), round(y, 2)] for x, y in g.exterior.coords]]
+        for (f, pc), g in zip(pcs, outl)]).encode()).hexdigest()
+    cache = os.path.join(HERE, "roll_nest.json")
+    placed = None
+    if os.path.exists(cache):
+        with open(cache) as fh:
+            c = json.load(fh)
+        if c.get("key") == key:
+            placed = c["placements"]
+    if placed is None:
+        res, bb = 0.5, KERF / 2 + 0.5             # raster step, half kerf + 1 step
+        rows = int(math.ceil((ROLL_W + 2 * bb) / res))  # roll edges need no kerf:
+        cols = int(math.ceil(6 * PACK_L / res))         # the raster overhangs them
 
-    def strip_len(pc):
-        w, h = size(pc)
-        return h if w <= ROLL_W else w
+        def raster(poly):
+            b = poly.bounds
+            xs = b[0] + (np.arange(int(math.ceil((b[2] - b[0]) / res))) + 0.5) * res
+            ys = b[1] + (np.arange(int(math.ceil((b[3] - b[1]) / res))) + 0.5) * res
+            gx, gy = np.meshgrid(xs, ys)
+            return shapely.contains_xy(poly, gx, gy).astype(float)
 
-    # row regions: the bands (R0..) and the rows after them; a region's
-    # pieces are cut as one strip in pack order if that uses less roll
-    cut = Y0 + (BAND_ROWS - 0.5) * ROW_H
-    blocks, rest = [], []                         # block: [(pc, turn, dx, dy)]
-    for pcs in faces:
-        for lo, hi in ((-1e9, cut + 0.01), (cut - 0.01, 1e9)):
-            reg = [pc for pc in pcs if lo <= pc["poly"].bounds[1] and pc["poly"].bounds[3] <= hi]
-            if not reg:
-                continue
-            x0 = min(pc["poly"].bounds[0] for pc in reg)
-            y0 = min(pc["poly"].bounds[1] for pc in reg)
-            x1 = max(pc["poly"].bounds[2] for pc in reg)
-            y1 = max(pc["poly"].bounds[3] for pc in reg)
-            if y1 - y0 <= ROLL_W and x1 - x0 < sum(strip_len(pc) for pc in reg):
-                blocks.append([(pc, False, -x0, -y0) for pc in reg])
-            else:
-                rest += reg
-        rest += [pc for pc in pcs if pc not in rest and not any(pc is q for b in blocks for q, *_ in b)]
-    rest.sort(key=lambda pc: (pc["shape"].ljust(3), pc["tap"]))
-    for pc in rest:
-        assert min(size(pc)) <= ROLL_W, ("piece wider than the roll", pc["tap"])
-    for pc in [q for q in rest if size(q)[0] > ROLL_W]:
-        if pc not in rest:
-            continue
-        rest.remove(pc)
-        w, h = size(pc)
-        b = pc["poly"].bounds
-        blk = [(pc, False, -b[0], -b[1])]
-        side = [q for q in rest if size(q)[1] <= ROLL_W - h - KERF and size(q)[0] <= w]
-        side.sort(key=lambda q: -(size(q)[0] if size(q)[0] > ROLL_W else size(q)[1]))
-        if side:
-            rest.remove(side[0])
-            qb = side[0]["poly"].bounds
-            blk.append((side[0], False, -qb[0], h + KERF - qb[1]))
-        blocks.append(blk)
-    blocks += [[(pc, True, 0.0, 0.0)] for pc in rest]
-    out, x = [], 0.0
-    for blk in blocks:
-        geo = [(pc, place(pc, dx, dy, turn)) for pc, turn, dx, dy in blk]
-        ln = max(g.bounds[2] for _, g in geo) - min(g.bounds[0] for _, g in geo)
-        sx = x - min(g.bounds[0] for _, g in geo)
-        for pc, g in geo:
-            out.append((pc, affinity.translate(g, sx, 0)))
-            pc["strip"] = (x, x + ln)
-        x += ln + STRIP_CUT
+        opts = []
+        for g in outl:
+            o = []
+            for flip in (1, -1):
+                for ang in range(0, 360, NEST_ANGLES):
+                    h = affinity.rotate(affinity.scale(g, flip, 1, origin=(0, 0)), ang, origin=(0, 0))
+                    hb = h.bounds
+                    if hb[3] - hb[1] > ROLL_W:
+                        continue
+                    m = raster(h.buffer(bb))
+                    k = np.zeros((rows, cols))
+                    k[:m.shape[0], :m.shape[1]] = m
+                    o.append((flip, ang, hb, m, np.conj(np.fft.rfft2(k))))
+            assert o, "piece wider than the roll"
+            opts.append(o)
+
+        def pack(order, mode):
+            occ = np.zeros((rows, cols))
+            out, length = [], 0
+            for i in order:
+                fo = np.fft.rfft2(occ)
+                best = None
+                for flip, ang, hb, m, fk in opts[i]:
+                    h, w = m.shape
+                    over = np.fft.irfft2(fo * fk, s=occ.shape)[: rows - h + 1, : cols - w + 1]
+                    free = np.argwhere(over < 0.5)
+                    free = free[free[:, 0] * res + (hb[3] - hb[1]) <= ROLL_W + 1e-6]
+                    if not len(free):
+                        continue
+                    if mode == 0:                # leftmost, then lowest
+                        j = np.lexsort((free[:, 0], free[:, 1]))[0]
+                        sk = (free[j, 1], free[j, 0])
+                    else:                        # shortest roll so far
+                        r = np.maximum(free[:, 1] + w, length)
+                        j = np.lexsort((free[:, 0], free[:, 1], r))[0]
+                        sk = (r[j], free[j, 1], free[j, 0])
+                    if best is None or sk < best[0]:
+                        best = (sk, free[j, 0], free[j, 1], flip, ang, hb, m)
+                _, r0, c0, flip, ang, hb, m = best
+                occ[r0:r0 + m.shape[0], c0:c0 + m.shape[1]] += m
+                length = max(length, c0 + m.shape[1])
+                out.append([int(i), flip, ang, c0 * res - hb[0], r0 * res - hb[1]])
+            return length, out
+
+        base = sorted(range(len(outl)), key=lambda i: -outl[i].area)
+        orders = [base]
+        for seed in range(NEST_TRIES):
+            o, rnd = base[:], random.Random(seed)
+            for _ in range(4):
+                a, b = rnd.randrange(len(o)), rnd.randrange(len(o))
+                o[a], o[b] = o[b], o[a]
+            orders.append(o)
+        print(f"nesting the copper on the roll ({len(orders) * 2} tries) ...")
+        _, placed = min((pack(o, mode) for o in orders for mode in (0, 1)), key=lambda r: r[0])
+        with open(cache, "w") as fh:
+            json.dump({"key": key, "placements": placed}, fh)
+
+    out = []
+    for i, flip, ang, dx, dy in placed:
+        pc = pcs[i][1]
+        g = affinity.rotate(affinity.scale(with_holes(pc), flip, 1, origin=(0, 0)), ang, origin=(0, 0))
+        pc["roll_tf"] = (flip, ang, dx, dy)      # same transform for tab / fold lines
+        out.append((pc, affinity.translate(g, dx, dy)))
+    # true-outline check: every piece on the roll, cut lines >= KERF apart
     for i, (pa, ga) in enumerate(out):
         assert ga.bounds[1] > -0.01 and ga.bounds[3] < ROLL_W + 0.01, (pa["tap"], ga.bounds)
         for pb, gb in out[i + 1:]:
-            assert ga.distance(gb) > min(STRIP_CUT, BUSBAR_GAP) - 0.05, (pa["tap"], pb["tap"])
-    return out, x - STRIP_CUT
+            assert ga.distance(gb) > KERF - 0.05, (pa["tap"], pb["tap"], ga.distance(gb))
+    x0 = min(g.bounds[0] for _, g in out)
+    for pc, _ in out:
+        f, a, dx, dy = pc["roll_tf"]
+        pc["roll_tf"] = (f, a, dx - x0, dy)
+    out = [(pc, affinity.translate(g, -x0, 0)) for pc, g in out]
+    return out, max(g.bounds[2] for _, g in out)
+
+
+def on_roll(pc, geom):
+    """Move any pack-coordinate geometry of a piece to its spot on the roll."""
+    f, a, dx, dy = pc["roll_tf"]
+    g = affinity.rotate(affinity.scale(geom, f, 1, origin=(0, 0)), a, origin=(0, 0))
+    return affinity.translate(g, dx, dy)
 
 
 def write_roll_svg(plan, length, top_pieces):
@@ -774,17 +848,15 @@ def write_roll_svg(plan, length, top_pieces):
            '<rect x="-5" y="-30" width="100%" height="100%" fill="white"/>',
            f'<text x="0" y="-18" font-size="6" font-weight="bold">Copper roll cutting plan - {ROLL_W:.0f} mm roll, '
            f'{length:.0f} mm long for one pack (1:1)</text>',
-           '<text x="0" y="-9" font-size="4">Cut the roll straight across into the sections below, left to right '
-           '(number = section length). Multi-piece sections are laid out as on the pack: cut between the pieces.</text>',
+           '<text x="0" y="-9" font-size="4">Every piece of both faces, nested by its outline. Print '
+           'docs/copper_cutting_guide.pdf (A4, 100 %), tape the pages together, lay it on the roll and cut.</text>',
            f'<rect x="0" y="0" width="{length:.1f}" height="{ROLL_W}" fill="#f7e3cf" stroke="#b5651d" stroke-width="0.6"/>']
-    strips = sorted({pc["strip"] for pc, _ in plan})
-    for n, (x0, x1) in enumerate(strips):
-        if n < len(strips) - 1:
-            xc = x1 + STRIP_CUT / 2
-            out.append(f'<line x1="{xc:.1f}" y1="-4" x2="{xc:.1f}" y2="{ROLL_W + 4}" stroke="red" '
-                       'stroke-width="0.4" stroke-dasharray="2,1"/>')
-        out.append(f'<text x="{(x0 + x1) / 2:.1f}" y="-1.5" font-size="3.5" text-anchor="middle" fill="red">'
-                   f'{n + 1}: {x1 - x0:.0f}</text>')
+    for k in range(1, int(math.ceil(length / GUIDE_SEG))):     # cutting guide page breaks
+        out.append(f'<line x1="{k * GUIDE_SEG:.1f}" y1="-4" x2="{k * GUIDE_SEG:.1f}" y2="{ROLL_W + 4}" '
+                   'stroke="black" stroke-width="0.3" stroke-dasharray="2,1.5"/>')
+    for k in range(int(math.ceil(length / GUIDE_SEG))):
+        out.append(f'<text x="{(k + 0.5) * GUIDE_SEG:.1f}" y="-1.5" font-size="3.5" text-anchor="middle">'
+                   f'PDF page {k + 2}</text>')
     for pc, g in plan:
         face = "top" if pc in top_pieces else "bottom"
         out.append(svg_poly(g, fill="white", fill_opacity="0.6", stroke="black", stroke_width="0.35"))
@@ -797,13 +869,220 @@ def write_roll_svg(plan, length, top_pieces):
         f.write("\n".join(out))
 
 
+def write_guide_pdf(plan, length, top_pieces, bot_pieces, assign, pol_up):
+    """docs/copper_cutting_guide.pdf: black-and-white A4 (landscape) cutting
+    guide at 1:1. Page 1 = how to use + print check + overview; then the
+    roll plan in A4-long sections that tape together into one strip the
+    width of the roll; then a 1:1 placement map of each face."""
+    try:
+        import cairocffi as cairo
+    except ImportError:
+        print("cairocffi not installed: skipping docs/copper_cutting_guide.pdf")
+        return
+    from shapely.ops import polylabel
+
+    W, H = 297.0, 210.0
+    MM = 72 / 25.4
+    SEG = GUIDE_SEG
+    X_L, Y_R = 21.0, 58.0                         # roll start / roll top on the page
+    pages = max(1, int(math.ceil(length / SEG)))
+    surf = cairo.PDFSurface(os.path.join(ROOT, "docs", "copper_cutting_guide.pdf"), W * MM, H * MM)
+    cr = cairo.Context(surf)
+    cr.scale(MM, MM)
+    cr.select_font_face("DejaVu Sans", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+
+    def text(x, y, s, size=3.5, bold=False, anchor="l"):
+        cr.select_font_face("DejaVu Sans", cairo.FONT_SLANT_NORMAL,
+                            cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL)
+        cr.set_font_size(size)
+        w = cr.text_extents(s)[4]
+        cr.move_to(x - (w / 2 if anchor == "c" else w if anchor == "r" else 0), y)
+        cr.show_text(s)
+
+    def line(pts, width=0.3, dash=None):
+        cr.set_line_width(width)
+        cr.set_dash(dash or [])
+        cr.move_to(*pts[0])
+        for q in pts[1:]:
+            cr.line_to(*q)
+        cr.stroke()
+        cr.set_dash([])
+
+    def ring(coords, tf):
+        pts = [tf(x, y) for x, y in coords]
+        cr.move_to(*pts[0])
+        for q in pts[1:]:
+            cr.line_to(*q)
+        cr.close_path()
+
+    def shape(g, tf, width=0.35):
+        polys = [g] if g.geom_type == "Polygon" else list(getattr(g, "geoms", []))
+        cr.set_line_width(width)
+        for p in polys:
+            if p.geom_type != "Polygon" or p.is_empty:
+                continue
+            ring(p.exterior.coords, tf)
+            for h in p.interiors:
+                ring(h.coords, tf)
+            cr.stroke()
+
+    def scale_bar(x, y, n=100):
+        line([(x, y), (x + n, y)], 0.4)
+        for t in range(0, n + 1, 10):
+            line([(x + t, y - (2.5 if t % 50 == 0 else 1.5)), (x + t, y)], 0.25)
+        text(x + n / 2, y - 3.5, f"{n} mm - measure this: it must be exactly {n} mm", 3, anchor="c")
+
+    def label_of(pc):
+        face = "TOP" if any(pc is q for q in top_pieces) else "BOTTOM"
+        if pc["shape"] in ("B-", "B+"):
+            return pc["shape"] + (" main -" if pc["shape"] == "B-" else " main +"), face + " face"
+        return f'B{pc["tap"]}', f'{face} face - shape {pc["shape"]}'
+
+    # ---------------- page 1: instructions + overview
+    text(12, 18, f"Copper cutting guide - 20s4p Max G3 pack - {ROLL_W:.0f} mm roll", 7, True)
+    text(12, 26, f"Uses {length:.0f} mm of the roll for one pack ({pages} roll pages, {len(plan)} pieces, "
+                 "both faces).", 4)
+    steps = [
+        "1. Print every page at 100 % / 'Actual size' (NOT 'fit to page'). Check the 100 mm bar below with a ruler.",
+        f"2. Roll pages 2-{pages + 1}: cut each page along its dashed JOIN lines, butt the pages together in order",
+        "    (page numbers and the mm scale along the roll edge must run on) and tape them on the back.",
+        "3. Lay the strip on the copper with the thick ROLL EDGE lines on the copper edges. Glue stick or tape it down.",
+        "4. Cut out every piece along its outline with sharp scissors / snips, paper and copper together.",
+        "5. Punch an 8 mm hole at every circle (+ marks the centre). Cut the 3 sides of each small TAB rectangle",
+        "    (U-flap for the balance wire, see README section 6).",
+        "6. B- / B+: the tongue folds down along the dashed FOLD line. Solder the main lead before welding.",
+        f"7. Leave the paper on until the piece is placed: its label says which face + piece. Pages {pages + 2}-{pages + 3}",
+        "    are 1:1 maps of both faces to check where each piece goes.",
+    ]
+    for i, s in enumerate(steps):
+        text(12, 38 + i * 6.2, s, 3.6)
+    scale_bar(12, 112)
+    line([(220, 70), (220, 120)], 0.4)
+    for t in range(0, 51, 10):
+        line([(220, 70 + t), (222.5, 70 + t)], 0.25)
+    text(224, 96, "50 mm", 3)
+    # overview of the whole roll, scaled
+    k = (W - 24) / max(length, 1)
+    oy = 135
+    text(12, oy - 4, f"Overview (not to scale): {ROLL_W:.0f} mm roll, numbers = roll page", 3.5, True)
+    tf_o = lambda x, y: (12 + x * k, oy + y * k)
+    cr.set_line_width(0.3)
+    cr.rectangle(12, oy, length * k, ROLL_W * k)
+    cr.stroke()
+    for pc, g in plan:
+        shape(Polygon(g.exterior), tf_o, 0.15)
+    for i in range(pages):
+        x = 12 + i * SEG * k
+        if i:
+            line([(x, oy - 2), (x, oy + ROLL_W * k + 2)], 0.3, [1.5, 1])
+        text(x + SEG * k / 2, oy + ROLL_W * k + 6, f"page {i + 2}", 3.5, anchor="c")
+    cr.show_page()
+
+    # ---------------- roll pages
+    for i in range(pages):
+        x0, x1 = i * SEG, min((i + 1) * SEG, length)
+        tf = lambda x, y, x0=x0: (X_L + x - x0, Y_R + y)
+        text(12, 14, f"ROLL page {i + 2} of {pages + 1}  -  roll {x0:.0f} to {x1:.0f} mm  (1:1, print at 100 %)", 5, True)
+        text(12, 21, "Thick lines = copper roll edges. Cut along every piece outline. Circle = 8 mm punch hole. "
+                     "Small rectangle = balance tab (cut 3 sides).", 3.2)
+        # roll edges, mm scale, joins
+        line([(X_L - 6, Y_R), (X_L + x1 - x0 + 6, Y_R)], 0.8)
+        line([(X_L - 6, Y_R + ROLL_W), (X_L + x1 - x0 + 6, Y_R + ROLL_W)], 0.8)
+        for t in range(int(math.ceil(x0 / 10)) * 10, int(x1) + 1, 10):
+            xx = X_L + t - x0
+            line([(xx, Y_R - (3 if t % 50 == 0 else 1.5)), (xx, Y_R)], 0.25)
+            if t % 50 == 0:
+                text(xx, Y_R - 4, f"{t}", 2.8, anchor="c")
+        text(X_L - 2, Y_R + ROLL_W / 2 - 2, "ROLL", 2.8, anchor="r")
+        text(X_L - 2, Y_R + ROLL_W / 2 + 2, "EDGE", 2.8, anchor="r")
+        for xe, nxt in ((x0, i), (x1, i + 2)):
+            if (xe == x0 and i == 0) or (xe == x1 and i == pages - 1):
+                continue
+            xx = X_L + xe - x0
+            line([(xx, Y_R - 12), (xx, Y_R + ROLL_W + 12)], 0.4, [3, 1.5])
+            text(xx, Y_R + ROLL_W + 17, f"JOIN - cut here, page {nxt + 1} goes this side", 3,
+                 anchor="r" if xe == x1 else "l")
+        if i == 0:
+            line([(X_L, Y_R - 8), (X_L, Y_R + ROLL_W + 8)], 0.6)
+            text(X_L + 1, Y_R + ROLL_W + 13, "START of the roll: square end of the copper here", 3)
+        if i == pages - 1:
+            xx = X_L + length - x0
+            line([(xx, Y_R - 8), (xx, Y_R + ROLL_W + 8)], 0.6)
+            text(xx - 1, Y_R + ROLL_W + 13, f"END: {length:.0f} mm of copper used", 3, anchor="r")
+        # pieces, clipped to this page
+        cr.save()
+        cr.rectangle(X_L - 0.2, Y_R - 0.5, x1 - x0 + 0.4, ROLL_W + 1)
+        cr.clip()
+        for pc, g in plan:
+            if g.bounds[2] < x0 - 1 or g.bounds[0] > x1 + 1:
+                continue
+            shape(g, tf, 0.4)
+            for c in pc["cells"]:
+                q = on_roll(pc, Point(pos[c]))
+                line([tf(q.x - 1.5, q.y), tf(q.x + 1.5, q.y)], 0.2)
+                line([tf(q.x, q.y - 1.5), tf(q.x, q.y + 1.5)], 0.2)
+            if "lead_y" in pc:
+                f = on_roll(pc, LineString([(0, pc["lead_y"] - pc["lead_w"] / 2),
+                                            (0, pc["lead_y"] + pc["lead_w"] / 2)]))
+                line([tf(*q) for q in f.coords], 0.4, [2, 1])
+                m = f.interpolate(0.5, normalized=True)
+                text(*tf(m.x, m.y), "FOLD", 2.5, anchor="c")
+            elif "tab" in pc:
+                shape(on_roll(pc, flap_poly(pc)), tf, 0.3)
+        cr.restore()
+        for pc, g in plan:
+            p = polylabel(Polygon(g.exterior), tolerance=0.5)
+            if x0 + 8 <= p.x <= x1 - 8:
+                l1, l2 = label_of(pc)
+                text(*tf(p.x, p.y - 0.3), l1, 3.2, True, "c")
+                text(*tf(p.x, p.y + 3.6), l2, 2.6, False, "c")
+        scale_bar(X_L, H - 14)
+        text(W - 12, H - 8, f"page {i + 2} / {pages + 3}", 3, anchor="r")
+        cr.show_page()
+
+    # ---------------- 1:1 placement maps
+    for face, pcs in (("top", top_pieces), ("bottom", bot_pieces)):
+        ox, oy = (W - PACK_L) / 2, 32.0
+        tf = lambda x, y, face=face: (ox + x, oy + (PACK_W - y if face == "top" else y))
+        seen = "seen from ABOVE" if face == "top" else "seen from BELOW (pack rolled over its long side)"
+        text(12, 14, f"{face.upper()} face placement map - {seen} - 1:1", 5, True)
+        text(12, 21, "Divider end on the LEFT. Each outline = one copper piece with its label. "
+                     "Cell: group number and the terminal facing you.", 3.2)
+        cr.save()
+        cr.rectangle(ox - 13, 0, PACK_L + 26, H)
+        cr.clip()
+        cr.set_line_width(0.5)
+        cr.rectangle(ox, oy, PACK_L, PACK_W)
+        cr.stroke()
+        for i, (x, y) in enumerate(pos):
+            cr.set_line_width(0.15)
+            cr.new_path()
+            cr.arc(*tf(x, y), 21.15 / 2, 0, 2 * math.pi)
+            cr.stroke()
+            sign = pol_up[i] if face == "top" else {"+": "-", "-": "+"}[pol_up[i]]
+            text(*tf(x, y + 1.0), f"{assign[i] + 1}{sign}", 3, False, "c")
+        for pc in pcs:
+            shape(pc["poly"], tf, 0.5)
+        cr.restore()
+        for pc in pcs:
+            p = polylabel(pc["poly"], tolerance=0.5)
+            l1, _ = label_of(pc)
+            text(*tf(p.x, p.y), l1, 3.4, True, "c")
+        cx, cy = tf(*chase[2:4])
+        text(cx, cy + 1, "chase", 2.5, anchor="c")
+        text(ox + 2, oy + PACK_W + 8, "<- DIVIDER END (lead tongues fold down here)", 3.2)
+        text(W - 12, H - 8, f"page {pages + (2 if face == 'top' else 3)} / {pages + 3}", 3, anchor="r")
+        cr.show_page()
+    surf.finish()
+
+
 def write_md(groups, assign, pol_up, top_pieces, bot_pieces, contact, types, maxdv, roll_len):
     rows = ["# Generated layout", "",
             "Generated by `generator/layout.py`. Coordinates in mm, x = 0 at the divider, "
             "y = 0 at the side wall the screw post is measured from.", "",
             "## Copper cut list", "",
-            "Every copper edge is a straight line. Identical letters = identical pieces "
-            "(a mirrored copy is the same template flipped over).", "",
+            "Copper pieces follow the cell outlines (COPPER_STYLE). Identical letters = identical "
+            "pieces (a mirrored copy is the same template flipped over).", "",
             "| Shape | Count | Pieces |", "|---|---|---|"]
     for t in types:
         names = ", ".join(f'{"top" if m in top_pieces else "bottom"} B{m["tap"]}' for m in t["members"])
@@ -812,7 +1091,8 @@ def write_md(groups, assign, pol_up, top_pieces, bot_pieces, contact, types, max
         if "lead_y" in pc:
             rows.append(f"| {pc['shape']} | 1 | top B{pc['tap']} + {pc['lead_w']:.0f} x {LEAD_LEN:.0f} mm lead tongue |")
     rows += ["", f"All pieces fit across a {ROLL_W:.0f} mm copper roll; one pack uses about "
-             f"{roll_len:.0f} mm of roll per copper layer (see copper_roll_plan.svg)."]
+             f"{roll_len:.0f} mm of roll for both faces (see copper_roll_plan.svg; print "
+             "copper_cutting_guide.pdf to cut it)."]
     rows += ["", f"Largest voltage step between neighbouring copper pieces on one face: "
              f"{maxdv} groups (~{maxdv * 4.2:.0f} V at full charge).", "",
              "## Series groups", "",
