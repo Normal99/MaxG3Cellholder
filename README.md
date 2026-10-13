@@ -50,7 +50,7 @@ The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands i
 
 **No two consecutive groups ever sit end to end in a row.** That means **single-layer copper everywhere, no double copper**:
 
-* The narrowest copper bridge between two groups is **~66 mm**.
+* The narrowest copper bridge between two groups is **~63 mm** (cell-outline copper, below).
 * An end-to-end joint is only ~14 mm.
 
 | Part of the pack | Groups | Pattern |
@@ -92,6 +92,10 @@ The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands i
   5. Leave the paper on until the piece is placed. Each label says the piece (B0–B20) and the face. Pages 6–7 are 1:1 maps of both faces showing where each piece goes.
 
   All 21 pieces are nested on the roll by their real outlines, turned in 30° steps and either side up, with 1 mm between cut lines. That leaves **~10 cm of the 1 m roll spare**.
+
+  ![copper roll plan](docs/copper_roll_plan.svg)
+
+  This is the whole roll as the PDF prints it. The dashed lines are where one A4 page ends and the next begins.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
@@ -102,7 +106,7 @@ The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands i
   * **Bottom face:** B1, B3 … B19. That's 10 pieces.
 * The balance tap number equals the copper piece number. Taps B0–B20 go to BMS balance pins 0–20 (B0 = B−, B20 = B+).
 * **Voltages:** neighbouring copper pieces are at most 18 groups apart (~76 V). The big steps are all along the line between rows 4 and 5, on the divider half of the pack. Lay fish paper over each face before wrapping, with an extra strip of kapton along the line between rows 4 and 5.
-* **No double copper:** every joint is a single layer. The weakest joints are in the 3-row blocks (5 cell contacts, ~66 mm of copper across).
+* **No double copper:** every joint is a single layer. The weakest joints are in the 3-row blocks (5 cell contacts, ~63 mm of copper across).
 
 To change the layout, edit `GROUP_PATTERN` in `generator/layout.py` and run it again (§10).
 
@@ -264,12 +268,12 @@ Then run `sh scad/export.sh`.
 2. Fit fish-paper rings on the positive ends.
 3. **Bottom face:**
    * Pre-solder the balance wires to the flaps of B1 … B19.
-   * Lay the punched copper pieces (see `docs/copper_bottom.svg`; it's drawn as seen from below).
+   * Lay the punched copper pieces. Page 7 of the cutting guide (or `docs/copper_bottom.svg`) shows where each one goes, drawn as seen from below.
    * Weld the nickel through the holes.
    * Tape the wires and route them into the chase.
 4. **Top face:**
    * Pre-solder the B− and B+ leads and the B2 … B18 balance wires.
-   * Lay the copper, weld the nickel, fold the tongues down and zip-tie the leads.
+   * Lay the copper (page 6 of the cutting guide, or `docs/copper_top.svg`), weld the nickel, fold the tongues down and zip-tie the leads.
 5. Measure each tap against B0 before plugging into the BMS. Each step should be ~3.6–4.2 V.
 6. Fish paper over both faces, then wrap the pack (foam + heat shrink). Make sure the controller is rated for **84 V** before connecting.
 
