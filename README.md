@@ -18,7 +18,7 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 |---|---|
 | `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each. Bottom is 270 mm long; top with BMS dock is 315 mm, so it needs a big bed. |
 | `stl/holder_*_a.stl` / `_b.stl` | **The same halves split in two, for normal beds.** Every part fits a 256 × 256 bed (largest: `holder_top_a`, 214 × 141 mm, with the BMS dock). The two parts **lock together through 7 shared cell sockets** (§7). |
-| `docs/copper_cutting_guide.pdf` | **Print this to cut the copper:** black-and-white A4 cutting guide at 1:1. The roll pages tape together into one 100 mm strip that you lay on the roll and cut through, plus 1:1 placement maps of both faces |
+| `docs/copper_cutting_guide.pdf` | **Print this to cut the copper:** black-and-white A4 cutting guide at 1:1. One page per section of the roll: lay it on the square end of the copper, cut out the pieces, cut straight across, next page. No taping pages together. Plus 1:1 placement maps of both faces |
 | `docs/copper_cutlist.svg` | **Copper cut list:** every distinct copper shape once, 1:1, with count, edge lengths and punch holes |
 | `docs/copper_roll_plan.svg` | Every copper piece nested on a **100 mm wide roll** (the same plan as the PDF, in one picture) |
 | `docs/copper_top.svg`, `docs/copper_bottom.svg` | 1:1 position of every copper piece on each face, with punch holes, tab flaps and tongue fold lines |
@@ -85,17 +85,19 @@ The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands i
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
 * **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. The copper lies flat on the holder, and the nickel only has to dip about 0.8 mm (lip + copper) through the hole to reach the cell.
 * **Cutting guide: one pack uses 90 cm of the 100 mm roll.** Print `docs/copper_cutting_guide.pdf` on A4 in black and white, at **100 % / "Actual size"** (not "fit to page"). Check the 100 mm bar with a ruler.
-  1. **Pages 2–5 are the roll, 1:1.** Cut each page along its dashed JOIN lines and butt them together in order. The mm scale along the roll edge runs on from page to page. Tape them on the back.
-  2. Lay the strip on the copper with the thick **ROLL EDGE** lines on the copper edges, and glue or tape it down.
-  3. Cut out every piece along its outline, paper and copper together.
-  4. Punch 8 mm at every circle (+ marks the centre), and cut the 3 sides of each small **TAB** rectangle (§6). The B− / B+ tongues fold along the dashed **FOLD** line.
-  5. Leave the paper on until the piece is placed. Each label says the piece (B0–B20) and the face. Pages 6–7 are 1:1 maps of both faces showing where each piece goes.
+  1. **Pages 2–5 are the roll, 1:1, one section per page.** No piece crosses from one page to the next, so the pages are never taped together. Do them in order, one page at a time:
+     * Cut the page along its **START** line and the two thick **ROLL EDGE** lines. That leaves a paper strip exactly as wide as the copper.
+     * Lay it on the copper flush with the copper's square end and both edges, and tape or glue-stick it down.
+     * Cut out every piece along its outline, paper and copper together.
+     * Cut the copper straight across at the dashed **CUT** line. That gives the square end for the next page.
+  2. Punch 8 mm at every circle (+ marks the centre), and cut the 3 sides of each small **TAB** rectangle (§6). The B− / B+ tongues fold along the dashed **FOLD** line.
+  3. Leave the paper on until the piece is placed. Each label says the piece (B0–B20) and the face. Pages 6–7 are 1:1 maps of both faces showing where each piece goes.
 
-  All 21 pieces are nested on the roll by their real outlines, turned in 30° steps and either side up, with 1 mm between cut lines. That leaves **~10 cm of the 1 m roll spare**.
+  All 21 pieces are nested by their real outlines, turned in 30° steps and either side up, with 1 mm between cut lines. Each page is filled with as much copper as fits (sections of 252, 242, 249 and 154 mm). That leaves **~10 cm of the 1 m roll spare**.
 
   ![copper roll plan](docs/copper_roll_plan.svg)
 
-  This is the whole roll as the PDF prints it. The dashed lines are where one A4 page ends and the next begins.
+  This is the whole roll, section by section, as the PDF prints it. The dashed lines are the straight cuts across the roll between the pages.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
 **Other things to know about the layout:**
