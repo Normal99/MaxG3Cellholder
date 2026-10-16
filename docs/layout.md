@@ -20,7 +20,7 @@ Copper pieces follow the cell outlines (COPPER_STYLE). Identical letters = ident
 | B- | 1 | top B0 + 36 x 35 mm lead tongue |
 | B+ | 1 | top B20 + 36 x 35 mm lead tongue |
 
-All pieces fit across a 100 mm copper roll; one pack uses about 902 mm of roll for both faces (see copper_roll_plan.svg; print copper_cutting_guide.pdf to cut it).
+All pieces fit across a 100 mm copper roll; one pack uses about 900 mm of roll for both faces (see copper_roll_plan.svg; print copper_cutting_guide.pdf to cut it).
 
 Largest voltage step between neighbouring copper pieces on one face: 18 groups (~76 V at full charge).
 
