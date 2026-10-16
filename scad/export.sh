@@ -8,4 +8,8 @@ for p in holder_bottom holder_top holder_bottom_a holder_bottom_b \
   echo "rendering $p"
   openscad -q -o "../stl/$p.stl" -D "part=\"$p\"" cellholder.scad &
 done
+for p in die punch test_die test_punch; do
+  echo "rendering copper_press_$p"
+  openscad -q -o "../stl/copper_press_$p.stl" -D "part=\"$p\"" copper_press.scad &
+done
 wait
