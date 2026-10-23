@@ -18,7 +18,7 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 |---|---|
 | `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each. Bottom is 270 mm long; top with BMS dock is 315 mm, so it needs a big bed. |
 | `stl/holder_*_a.stl` / `_b.stl` | **The same halves split in two, for normal beds.** Every part fits a 256 × 256 bed (largest: `holder_top_a`, 214 × 141 mm, with the BMS dock). The two parts **lock together through 7 shared cell sockets** (§7). |
-| `stl/copper_press_die.stl`, `stl/copper_press_punch.stl` | **Copper press** (§2): presses a dish into the copper over every cell so it drops into the welding window and sits on the cell. 128 × 105 mm, fits every piece. `copper_press_test_*` = 1-cell version to test first |
+| `stl/copper_press_stencil_a.stl`, `_stencil_b.stl`, `_fake_cell.stl` | **Copper press** (§2): a guide grid that sits on the copper on the pack, plus fake cells that push the copper through every welding window onto the cell. `copper_press_stencil_test` = corner tile to try first |
 | `docs/copper_cutting_guide.pdf` | **Print this to cut the copper:** black-and-white A4 cutting guide at 1:1. One page per section of the roll: lay it on the square end of the copper, cut out the pieces, cut straight across, next page. No taping pages together. Plus 1:1 placement maps of both faces |
 | `docs/copper_cutlist.svg` | **Copper cut list:** every distinct copper shape once, 1:1, with count, edge lengths and punch holes |
 | `docs/copper_roll_plan.svg` | Every copper piece nested on a **100 mm wide roll** (the same plan as the PDF, in one picture) |
@@ -26,7 +26,7 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 | `docs/wiring_top.svg`, `docs/wiring_bottom.svg` | Wiring diagrams: group numbers, cell polarity, copper pieces and balance taps |
 | `docs/layout.md` | Cut list table, plus every group, cell and copper piece |
 | `scad/cellholder.scad` | Parametric OpenSCAD model: holder halves with BMS dock, tolerances, BMS size |
-| `scad/copper_press.scad` | Parametric copper press (copper thickness, dish depth) |
+| `scad/copper_press.scad` | Parametric copper press: stencil + fake cell (press depth, fits) |
 | `scad/layout_data.scad` | Generated layout data (do not edit by hand) |
 | `generator/layout.py` | Generates the layout, copper pieces, diagrams and templates |
 
@@ -85,7 +85,7 @@ The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands i
 **How to prepare the copper:**
 
 * **Punch holes:** there's one 8 mm circle over every cell. Punch a hole there, lay the nickel strip over the copper, and weld the nickel to the cell through the hole and to the copper around it. Change `PUNCH_D` in `generator/layout.py` if your punch is a different size. The hole must be smaller than the cell's positive cap.
-* **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. **Press a dish into the copper over every cell** with the copper press (below): the dish drops into the 17 mm welding window and sits right on the cell, and the rest of the copper lies flat on the holder. The dishes also lock each piece in place, so it can't slide while you weld. The nickel then only has to bridge the copper thickness through the hole.
+* **Cells are recessed 0.6 mm:** each cell stops against a thin lip 0.6 mm below the holder face. **Press the copper down through the 17 mm welding window onto every cell**, right on the pack, with the copper press (below). Each cell then gets a dish of copper sitting on it for good contact, while the rest of the copper lies flat on the holder. The dishes also lock each piece in place, so it can't slide while you weld. The nickel then only has to bridge the copper thickness through the hole.
 * **Cutting guide: one pack uses 90 cm of the 100 mm roll.** Print `docs/copper_cutting_guide.pdf` on A4 in black and white, at **100 % / "Actual size"** (not "fit to page"). Check the 100 mm bar with a ruler.
   1. **Pages 2–5 are the roll, 1:1, one section per page.** No piece crosses from one page to the next, so the pages are never taped together. Do them in order, one page at a time:
      * Cut the page along its **START** line and the two thick **ROLL EDGE** lines. That leaves a paper strip exactly as wide as the copper.
@@ -102,26 +102,33 @@ The layout follows a proven build: **3-row blocks in rows 5–7, slanted bands i
   This is the whole roll, section by section, as the PDF prints it. The dashed lines are the straight cuts across the roll between the pages.
 * **Gaps:** neighbouring pieces have a 2.5 mm gap. The generator checks that no copper ever comes within 10 mm of another group's cell centre.
 
-### Copper press: a dish over every cell
+### Copper press: push the copper into every cell
 
 ![copper press](docs/render_copper_press.png)
 
-Two printed plates. The **die** (blue) has a pocket at every cell position with a locating pin in the middle. The **punch** (orange) has a matching boss over each pocket and a hole for each pin.
+The holder itself is the die: the copper is pressed right on the pack, through each welding window onto its cell. The holder doesn't change.
 
-* **It fits every piece.** All the copper pieces sit on the same cell grid, and the 5 × 5 grid covers the largest one (checked for all 21 pieces, either side up).
-* **It lines itself up.** The 8 mm hole you punched over each cell drops over its pin, and the same pins guide the punch onto the die. Pockets with no copper over them don't matter.
-* **Every dish is the same depth.** The boss squeezes the copper down onto the pocket floor, so the dish's underside ends up exactly `dish_depth` (0.6 mm, = the cell recess) below the flat copper. The dish is 16.6 mm across, so it drops into the 17 mm window.
+* **Stencil (blue):** a 6 mm guide grid with a hole over every cell. Its skirt drops over the holder's two side walls, the far end and the two corners at the divider end, so every hole sits exactly over a cell window.
+  * It comes in two halves, split along the same zig-zag seam as the holder, so each fits a 256 mm bed. Each half locates on the holder by itself.
+  * The divider end has only corner skirts, so the lead tongues and the BMS dock are free.
+  * It fits both faces: the cell grid is the same from above and from below.
+* **Fake cell (orange):** a plunger the size of a cell end. It slides down a stencil hole, and its 15.9 mm tip pushes the copper through the 17 mm window onto the cell.
+  * **Depth stop:** its collar lands on the stencil when the copper is exactly on the cell (0.6 mm down). You can't over-press.
+  * **Copper thickness doesn't matter:** the stencil sits on the copper, and the plunger's shoulder lands on the copper too.
+  * **Centring check:** the hole through the middle lets you see that the 8 mm punch hole is centred.
 
 How to use it:
 
-1. **Measure your copper thickness** and set `copper_t` in `scad/copper_press.scad` (default 0.2 mm). Re-export with `sh scad/export.sh`. This sets the clearance between boss and pocket.
-2. Print **`copper_press_test_die` + `copper_press_test_punch` first** (1 cell, a few minutes). Press one punched disc of your copper and drop it into a cell window of the holder over a cell:
-   * the dish should touch the cell while the flat part sits on the holder face;
-   * **springs back and doesn't reach the cell:** raise `dish_depth` by 0.1 mm;
-   * **lifts the copper off the holder face:** lower it.
-3. Print `copper_press_die` + `copper_press_punch` (128 × 105 mm each).
-4. **For each piece, after punching the 8 mm holes:** lay it on the die with the side that faces the cells **down**, every hole over a pin. Put the punch on top, bosses down. Squeeze evenly in a vise or with two clamps, or put a wood block on top and give it a few mallet blows. Big pieces like B− / B+ can hang over the edge; the tongue stays flat.
-5. Press **before** soldering the balance wire and the main lead, so heat doesn't soften anything near the press.
+1. Print **`copper_press_stencil_test` and one `copper_press_fake_cell` first.** The test tile is a corner tile that locates on the divider-end corner of the holder.
+   * Press one piece of copper there and check the dish sits on the cell.
+   * **If it springs back and doesn't touch the cell:** raise `dish_depth` in `scad/copper_press.scad` by 0.1 mm and re-export with `sh scad/export.sh`.
+2. Print `copper_press_stencil_a` + `_stencil_b`, and **9 fake cells**. A piece has up to 8 cells.
+3. **For each piece**, with the cells in and the piece punched and laid in its place:
+   * put the stencil on, skirt over the holder edges;
+   * drop a fake cell into every hole over the piece;
+   * push each one down until its collar sits on the stencil. Use your thumb, or a flat board over all of them and a few light mallet taps.
+4. Lift the stencil off and move on to the next piece. Then weld.
+5. Press **before** soldering anything near the piece, and do the solder joints (balance wire, main lead) on the bench as before (§5, §6).
 
 **Other things to know about the layout:**
 
@@ -214,8 +221,9 @@ It's only the two holder halves. The BMS dock is part of the top half. Plus, as 
 
 | Tool | Size (mm) | Notes |
 |---|---|---|
-| `stl/copper_press_test_die.stl` + `_test_punch.stl` | 28 × 28 | Print first and test one disc (§2) |
-| `stl/copper_press_die.stl` + `_punch.stl` | 128 × 105 | PLA is fine for this (it's a tool, not in the deck). 0.1–0.12 mm layers for crisp 0.6 mm pockets, 4 walls, 30 %+ infill. Print as exported: die pins up, punch bosses up |
+| `stl/copper_press_stencil_test.stl` + 1 × `copper_press_fake_cell.stl` | 63 × 69 | Print first and try one corner (§2) |
+| `stl/copper_press_stencil_a.stl`, `_stencil_b.stl` | 149 × 146, 160 × 146 | PLA is fine for this (it's a tool, not in the deck). 0.2 mm layers, 3 walls. Print as exported: top face down, skirt up, no supports |
+| `stl/copper_press_fake_cell.stl` × 9 | Ø21.6 × 20 | Tip down, 100 % infill (small and hard-wearing) |
 
 | Your bed | Print these |
 |---|---|
@@ -298,12 +306,13 @@ Then run `sh scad/export.sh`.
 2. Fit fish-paper rings on the positive ends.
 3. **Bottom face:**
    * Pre-solder the balance wires to the flaps of B1 … B19.
-   * Lay the punched and pressed copper pieces (dishes into the windows). Page 7 of the cutting guide (or `docs/copper_bottom.svg`) shows where each one goes, drawn as seen from below.
+   * Lay the punched copper pieces. Page 7 of the cutting guide (or `docs/copper_bottom.svg`) shows where each one goes, drawn as seen from below.
+   * Press each piece into the windows with the stencil and fake cells (§2).
    * Weld the nickel through the holes.
    * Tape the wires and route them into the chase.
 4. **Top face:**
    * Pre-solder the B− and B+ leads and the B2 … B18 balance wires.
-   * Lay the pressed copper (page 6 of the cutting guide, or `docs/copper_top.svg`), weld the nickel, fold the tongues down and zip-tie the leads.
+   * Lay the copper (page 6 of the cutting guide, or `docs/copper_top.svg`), press it into the windows with the stencil and fake cells, weld the nickel, fold the tongues down and zip-tie the leads.
 5. Measure each tap against B0 before plugging into the BMS. Each step should be ~3.6–4.2 V.
 6. Fish paper over both faces, then wrap the pack (foam + heat shrink). Make sure the controller is rated for **84 V** before connecting.
 
