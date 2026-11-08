@@ -5,12 +5,12 @@
 //   STENCIL     a guide grid that sits on the copper on the holder face. Its
 //               skirt drops over the holder's side walls and ends, so every
 //               hole sits exactly over a cell. Two halves (256 mm beds).
-//   FAKE CELL   a plunger the size of a cell end. It slides down a stencil
-//               hole and pushes the copper through the 17 mm window onto the
-//               cell. Its collar lands on the stencil at exactly the right
-//               depth: you can't over-press, and the copper thickness doesn't
-//               matter (the stencil sits on the copper, the plunger's shoulder
-//               lands on the copper too).
+//   FAKE CELL   a double-ended plunger that slides snugly down a stencil
+//               hole. The "-" end presses a big 15.9 mm patch onto the flat
+//               negative end of the cell; the "+" end presses only a small
+//               ring round the punched hole onto the + button, so the copper
+//               never touches the shoulder (that's the can = negative). The
+//               collar in the middle lands on the stencil at the right depth.
 //
 // Use: cells in, copper piece punched and laid in place, stencil on (skirt
 // over the holder edges), a fake cell into every hole over the piece, then
@@ -18,9 +18,9 @@
 // board over all of them and a few mallet taps). Lift the stencil off.
 //
 // Parts (set `part`):  stencil_a, stencil_b   divider half / far-end half
-//                      fake_cell              print ~9 (a piece has up to 8 cells)
+//                      fake_cell              print ~9 (a piece has up to 8 cells), double ended
 //                      stencil_test           corner tile, 4 cells, to try first
-// Print as exported: stencils skirt-up (no supports), fake cell tip-down.
+// Print as exported: stencils skirt-up (no supports), fake cell standing on its - end.
 
 include <layout_data.scad>      // cell centres, chase slot (from generator/layout.py)
 
@@ -31,16 +31,28 @@ window_d    = 17.0;   // welding window in the holder face
 cell_recess = 0.6;    // cell top below the holder face
 
 // ---- press
-dish_depth  = cell_recess;  // how far the copper is pushed down (raise ~0.1 if it springs back)
-copper_t    = 0.2;    // only sets the tip clearance in the window
-tip_d       = window_d - 2 * copper_t - 0.7;   // plunger tip, inside the window with the copper
-body_d      = 20.0;   // plunger body (guided by the stencil hole)
-hole_d      = body_d + 0.4;
+copper_t    = 0.2;    // only sets clearances
+punch_hole  = 8.0;    // hole punched in the copper over every cell (PUNCH_D)
+
+// fake cell = double ended: one collar in the middle, a stamp on each side.
+// Put the end that matches the cell end facing up into the stencil hole.
+//   - end : full flat negative end of the cell: big stamp, the whole window
+//   + end : only the + button: small stamp round the punched hole, so the
+//           copper never comes down onto the shoulder (the can = negative)
+neg_tip_d   = window_d - 2 * copper_t - 0.7;   // 15.9: big patch on the flat - end
+neg_depth   = cell_recess;                     // - end is flat at the lip: 0.6 below the face
+pos_tip_d   = 10.0;   // + stamp: MEASURE the + button and use (button diameter - 0.4)
+pos_depth   = cell_recess;   // stops on the button anyway; if the button sits higher the collar
+                             // won't reach the stencil - that's fine, press until it stops
+relief_d    = punch_hole + 0.6;   // shallow centre recess: the stamp face never touches the
+relief_h    = copper_t + 0.3;     // cell through the punched hole, only the copper round it
+hole_d      = 20.4;   // stencil hole (as printed - unchanged)
+fake_fit    = 0.1;    // clearance per side in the stencil hole: snug, slides without play
+body_d      = hole_d - 2 * fake_fit;   // 20.2
 collar_d    = 21.6;   // depth stop on the stencil (neighbours are 22.2 apart)
-collar_h    = 3;
-knob_d      = 12;
-knob_h      = 10;
-sight_d     = 9;      // look-through hole: the punched 8 mm hole must be centred in it
+collar_h    = 4;      // also the grip
+sight_d     = 4;      // small look-through hole: check the punched hole is centred
+mark_h      = 0.4;    // engraved + / - on each shoulder
 
 T           = 6;      // stencil thickness = guided length
 fit         = 0.3;    // skirt clearance to the holder walls, per side
@@ -97,17 +109,33 @@ module half(which) {
     }
 }
 
-module fake_cell() {
-    // modelled tip down: tip from z = 0, shoulder at dish_depth, collar at
-    // dish_depth + T (lands on the stencil top at full depth)
+// one stamp end, modelled pointing down: stamp face at z = 0, shoulder at
+// `depth`, body up to the collar at depth + T (the collar lands on the stencil
+// top exactly when the copper is pressed onto the cell)
+module stamp(tip_d, depth, mark) {
+    ch = 0.3;
     difference() {
         union() {
-            ch = 0.3;
             cylinder(d1 = tip_d - 2 * ch, d2 = tip_d, h = ch);
-            translate([0, 0, ch]) cylinder(d = tip_d, h = dish_depth - ch + 0.01);
-            translate([0, 0, dish_depth]) cylinder(d = body_d, h = T);
-            translate([0, 0, dish_depth + T]) cylinder(d = collar_d, h = collar_h);
-            translate([0, 0, dish_depth + T + collar_h]) cylinder(d = knob_d, h = knob_h);
+            translate([0, 0, ch]) cylinder(d = tip_d, h = depth - ch + 0.01);
+            translate([0, 0, depth]) cylinder(d = body_d, h = T + 0.01);
+        }
+        translate([0, 0, -1]) cylinder(d = relief_d, h = relief_h + 1);          // centre relief
+        // + / - engraved in the shoulder, beside the stamp
+        translate([(tip_d / 2 + body_d / 2) / 2, 0, depth - mark_h]) linear_extrude(mark_h + 0.01)
+            if (mark == "+") { square([3, 0.8], center = true); square([0.8, 3], center = true); }
+            else square([3, 0.8], center = true);
+    }
+}
+
+module fake_cell() {
+    // printed standing on the - end: - stamp on the bed, collar in the middle,
+    // + stamp on top. No supports.
+    difference() {
+        union() {
+            stamp(neg_tip_d, neg_depth, "-");
+            translate([0, 0, neg_depth + T]) cylinder(d = collar_d, h = collar_h);
+            translate([0, 0, neg_depth + T + collar_h + T + pos_depth]) mirror([0, 0, 1]) stamp(pos_tip_d, pos_depth, "+");
         }
         translate([0, 0, -1]) cylinder(d = sight_d, h = 100);
     }
