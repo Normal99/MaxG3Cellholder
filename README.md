@@ -18,7 +18,7 @@ Cellholder for a custom 20s4p battery for the Segway Ninebot Max G3 without cutt
 |---|---|
 | `stl/holder_bottom.stl`, `stl/holder_top.stl` | Cell holder halves, one piece each. Bottom is 270 mm long; top with BMS dock is 315 mm, so it needs a big bed. |
 | `stl/holder_*_a.stl` / `_b.stl` | **The same halves split in two, for normal beds.** Every part fits a 256 × 256 bed (largest: `holder_top_a`, 214 × 141 mm, with the BMS dock). The two parts **lock together through 7 shared cell sockets** (§7). |
-| `stl/copper_press_stencil_a.stl`, `_stencil_b.stl`, `_fake_cell.stl` | **Copper press** (§2): a guide grid that sits on the copper on the pack, plus double-ended fake cells that push the copper through every welding window onto the cell: a big flat stamp for − ends, a 12 mm flat stamp for + caps. `copper_press_stencil_test` = corner tile to try first |
+| `stl/copper_press_stencil_a.stl`, `_stencil_b.stl`, `_fake_cell.stl` | **Copper press** (§2): a guide grid that sits on the copper on the pack, plus double-ended fake cells that push the copper through every welding window onto the cell: a flush 16.4 mm flat stamp for − ends, a 12 mm flat stamp for + caps. `copper_press_stencil_test` = corner tile to try first |
 | `docs/copper_cutting_guide.pdf` | **Print this to cut the copper:** black-and-white A4 cutting guide at 1:1. One page per section of the roll: lay it on the square end of the copper, cut out the pieces, cut straight across, next page. No taping pages together. Plus 1:1 placement maps of both faces |
 | `docs/copper_cutlist.svg` | **Copper cut list:** every distinct copper shape once, 1:1, with count, edge lengths and punch holes |
 | `docs/copper_roll_plan.svg` | Every copper piece nested on a **100 mm wide roll** (the same plan as the PDF, in one picture) |
@@ -113,13 +113,13 @@ The holder itself is the die: the copper is pressed right on the pack, through e
   * The divider end has only corner skirts, so the lead tongues and the BMS dock are free.
   * It fits both faces: the cell grid is the same from above and from below.
 * **Fake cell (orange), double ended, with a dead-flat stamp face on each end** (no recess, no hole): the copper has to be pressed down flat and evenly for good welds. Over the 8 mm punch hole, the flat face simply stays one copper thickness clear of the cell. The body slides **snugly** down a stencil hole (20.2 mm in the 20.4 mm hole, 0.1 mm per side). Use the end that matches the cell end facing up:
-  * **"−" end:** a big **15.9 mm** flat stamp, sticking out 1.0 mm. It presses the copper flat onto the whole negative end of the cell.
+  * **"−" end:** a **16.4 mm** flat stamp that fills the 17 mm window and sticks out exactly 0.6 mm, the cell recess. It goes in **flush**: just as it bottoms on the cell, its shoulder lands on the copper on the holder face. The copper ends up flat on the whole negative end and flat on the holder face around it.
   * **"+" end:** a **12 mm** flat stamp, sticking out further, 1.5 mm. It presses the copper flat onto the raised + cap only.
     * On a 21700, the crimp around the cap is the negative can, and its inner edge is about 14–15 mm across. 12 mm stays well inside that, and well over the 8 mm punch hole.
     * The cap stands above the crimp, so the copper outside the stamp stays clear of the crimp.
-  * **Both stamps stick out past the 0.6 mm the cells sit below the face**, so each one bottoms on the cell itself, with the copper squeezed flat between. The cell is held by the lip on the other holder half, so it can't be pushed through.
+  * **Each stamp bottoms on the cell itself**, with the copper squeezed flat between. The cell is held by the lip on the other holder half, so it can't be pushed through.
   * Big "+" and "−" are engraved on the grip ring, each next to its own end.
-  * It's 30.5 mm long, so there's something to hold.
+  * It's 30 mm long, so there's something to hold.
 
 ![fake cell](docs/render_fake_cell.png)
 
@@ -232,7 +232,7 @@ It's only the two holder halves. The BMS dock is part of the top half. Plus, as 
 |---|---|---|
 | `stl/copper_press_stencil_test.stl` + 1 × `copper_press_fake_cell.stl` | 63 × 69 | Print first and try one corner (§2) |
 | `stl/copper_press_stencil_a.stl`, `_stencil_b.stl` | 149 × 146, 160 × 146 | PLA is fine for this (it's a tool, not in the deck). 0.2 mm layers, 3 walls. Print as exported: top face down, skirt up, no supports |
-| `stl/copper_press_fake_cell.stl` × 9 | Ø21.6 × 30.5 | Standing on its "−" end as exported: that face prints flat on the bed. Turn on ironing (or a smooth top layer) for the "+" face. 100 % infill, no supports |
+| `stl/copper_press_fake_cell.stl` × 9 | Ø21.6 × 30.1 | Standing on its "−" end as exported: that face prints flat on the bed. Turn on ironing (or a smooth top layer) for the "+" face. 100 % infill, no supports |
 
 | Your bed | Print these |
 |---|---|

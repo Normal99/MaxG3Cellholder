@@ -7,11 +7,11 @@
 //               hole sits exactly over a cell. Two halves (256 mm beds).
 //   FAKE CELL   a double-ended plunger that slides snugly down a stencil
 //               hole, with a FLAT stamp face on each end. The "-" end presses
-//               a big 15.9 mm patch flat onto the negative end of the cell;
+//               a 16.4 mm patch that fills the window, flush, onto the
+//               negative end of the cell;
 //               the "+" end presses a 12 mm patch flat onto the + cap only,
 //               so the copper never comes down onto the crimp round it (that's
-//               the can = negative). Both stamps stick out past the 0.6 mm
-//               cell recess, so they bottom on the cell itself.
+//               the can = negative), sticking out further to reach the cap.
 //
 // Use: cells in, copper piece punched and laid in place, stencil on (skirt
 // over the holder edges), a fake cell into every hole over the piece, then
@@ -43,11 +43,14 @@ punch_hole  = 8.0;    // hole punched in the copper over every cell (PUNCH_D)
 //   - end : the whole flat negative end of the cell: big stamp, the full window
 //   + end : the raised + cap only, so the copper never comes down onto the
 //           crimp/shoulder round it (that's the can = negative)
-// Both stamps stick out further than the 0.6 mm the cells sit below the face,
-// so the stamp always bottoms on the cell itself (copper squeezed flat onto
-// it) instead of on a collar.
-neg_tip_d   = window_d - 2 * copper_t - 0.7;   // 15.9: big flat patch on the - end
-neg_tip_h   = 1.0;    // sticks out 1.0 (cells sit 0.6 down): always reaches the can
+// The - stamp fills the window and is exactly as tall as the cell recess, so
+// it goes in flush: copper flat on the cell and flat on the holder face round
+// it. The + stamp sticks out further and bottoms on the raised + cap.
+neg_tip_d   = window_d - 2 * copper_t - 0.2;   // 16.4: fills the 17 mm window (room for the
+                                               // copper wrapping the window edge + 0.1 per side)
+neg_tip_h   = cell_recess;   // exactly the cell recess: the stamp bottoms on the can just as
+                             // the shoulder lands on the copper on the holder face, so the copper
+                             // ends up flat on the cell AND flush on the holder face round it
 pos_tip_d   = 12.0;   // + stamp: inside the crimp (~14-15 mm on a 21700), well over the
                       // 8 mm punch hole. MEASURE the flat raised + area of your cell and
                       // use that diameter - 0.5 if it is smaller than 12.5
