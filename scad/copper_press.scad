@@ -5,22 +5,23 @@
 //   STENCIL     a guide grid that sits on the copper on the holder face. Its
 //               skirt drops over the holder's side walls and ends, so every
 //               hole sits exactly over a cell. Two halves (256 mm beds).
-//   FAKE CELL   a plunger the size of a cell end. It slides down a stencil
-//               hole and pushes the copper through the 17 mm window onto the
-//               cell. Its collar lands on the stencil at exactly the right
-//               depth: you can't over-press, and the copper thickness doesn't
-//               matter (the stencil sits on the copper, the plunger's shoulder
-//               lands on the copper too).
+//   FAKE CELL   a double-ended plunger that slides snugly down a stencil
+//               hole, with a FLAT stamp face on each end. The "-" end presses
+//               a 16.4 mm patch that fills the window, flush, onto the
+//               negative end of the cell;
+//               the "+" end presses a 12 mm patch flat onto the + cap only,
+//               so the copper never comes down onto the crimp round it (that's
+//               the can = negative), sticking out further to reach the cap.
 //
 // Use: cells in, copper piece punched and laid in place, stencil on (skirt
 // over the holder edges), a fake cell into every hole over the piece, then
-// push each one down until its collar sits on the stencil (thumb, or a flat
-// board over all of them and a few mallet taps). Lift the stencil off.
+// push each one down until it bottoms on the cell (thumb, or a flat board
+// over all of them and a few mallet taps). Lift the stencil off.
 //
 // Parts (set `part`):  stencil_a, stencil_b   divider half / far-end half
-//                      fake_cell              print ~9 (a piece has up to 8 cells)
+//                      fake_cell              print ~9 (a piece has up to 8 cells), double ended
 //                      stencil_test           corner tile, 4 cells, to try first
-// Print as exported: stencils skirt-up (no supports), fake cell tip-down.
+// Print as exported: stencils skirt-up (no supports), fake cell standing on its - end.
 
 include <layout_data.scad>      // cell centres, chase slot (from generator/layout.py)
 
@@ -31,16 +32,36 @@ window_d    = 17.0;   // welding window in the holder face
 cell_recess = 0.6;    // cell top below the holder face
 
 // ---- press
-dish_depth  = cell_recess;  // how far the copper is pushed down (raise ~0.1 if it springs back)
-copper_t    = 0.2;    // only sets the tip clearance in the window
-tip_d       = window_d - 2 * copper_t - 0.7;   // plunger tip, inside the window with the copper
-body_d      = 20.0;   // plunger body (guided by the stencil hole)
-hole_d      = body_d + 0.4;
-collar_d    = 21.6;   // depth stop on the stencil (neighbours are 22.2 apart)
-collar_h    = 3;
-knob_d      = 12;
-knob_h      = 10;
-sight_d     = 9;      // look-through hole: the punched 8 mm hole must be centred in it
+copper_t    = 0.2;    // only sets clearances
+punch_hole  = 8.0;    // hole punched in the copper over every cell (PUNCH_D)
+
+// fake cell = double ended, a FLAT stamp face on each end (no recess, no
+// hole: the copper must be pressed flat and evenly or the welds suffer).
+// Over the punched 8 mm hole the flat face simply stays one copper thickness
+// clear of the cell; it bears on the copper ring round the hole.
+// Put the end that matches the cell end facing up into the stencil hole.
+//   - end : the whole flat negative end of the cell: big stamp, the full window
+//   + end : the raised + cap only, so the copper never comes down onto the
+//           crimp/shoulder round it (that's the can = negative)
+// The - stamp fills the window and is exactly as tall as the cell recess, so
+// it goes in flush: copper flat on the cell and flat on the holder face round
+// it. The + stamp sticks out further and bottoms on the raised + cap.
+neg_tip_d   = window_d - 2 * copper_t - 0.2;   // 16.4: fills the 17 mm window (room for the
+                                               // copper wrapping the window edge + 0.1 per side)
+neg_tip_h   = cell_recess;   // exactly the cell recess: the stamp bottoms on the can just as
+                             // the shoulder lands on the copper on the holder face, so the copper
+                             // ends up flat on the cell AND flush on the holder face round it
+pos_tip_d   = 12.0;   // + stamp: inside the crimp (~14-15 mm on a 21700), well over the
+                      // 8 mm punch hole. MEASURE the flat raised + area of your cell and
+                      // use that diameter - 0.5 if it is smaller than 12.5
+pos_tip_h   = 1.5;    // sticks out further: bottoms on the + cap
+body_len    = 8;      // guided part each side (stencil is 6 thick)
+grip_h      = 12;     // middle grip ring
+hole_d      = 20.4;   // stencil hole (as printed - unchanged)
+fake_fit    = 0.1;    // clearance per side in the stencil hole: snug, slides without play
+body_d      = hole_d - 2 * fake_fit;   // 20.2
+grip_d      = 21.6;   // grip ring (neighbouring fake cells are 22.2 apart)
+mark_h      = 0.6;    // engraved + / - on the grip ring ends
 
 T           = 6;      // stencil thickness = guided length
 fit         = 0.3;    // skirt clearance to the holder walls, per side
@@ -97,19 +118,36 @@ module half(which) {
     }
 }
 
+// one end, modelled pointing down: flat stamp face at z = 0, tip_h tall,
+// then the guided body
+module stamp_end(tip_d, tip_h) {
+    ch = 0.3;   // edge chamfer only - the face itself stays flat
+    cylinder(d1 = tip_d - 2 * ch, d2 = tip_d, h = ch);
+    translate([0, 0, ch]) cylinder(d = tip_d, h = tip_h - ch + 0.01);
+    translate([0, 0, tip_h]) cylinder(d = body_d, h = body_len + 0.01);
+}
+
+module mark(m) {    // + or -, 4 mm, engraved
+    linear_extrude(mark_h + 0.01) if (m == "+") { square([4, 1], center = true); square([1, 4], center = true); }
+                                  else square([4, 1], center = true);
+}
+
 module fake_cell() {
-    // modelled tip down: tip from z = 0, shoulder at dish_depth, collar at
-    // dish_depth + T (lands on the stencil top at full depth)
+    // printed standing on the - stamp: that face is on the bed, dead flat.
+    // Use ironing (or a smooth top layer) for the + face on top.
+    z_grip = neg_tip_h + body_len;
+    z_top = z_grip + grip_h + body_len + pos_tip_h;
     difference() {
         union() {
-            ch = 0.3;
-            cylinder(d1 = tip_d - 2 * ch, d2 = tip_d, h = ch);
-            translate([0, 0, ch]) cylinder(d = tip_d, h = dish_depth - ch + 0.01);
-            translate([0, 0, dish_depth]) cylinder(d = body_d, h = T);
-            translate([0, 0, dish_depth + T]) cylinder(d = collar_d, h = collar_h);
-            translate([0, 0, dish_depth + T + collar_h]) cylinder(d = knob_d, h = knob_h);
+            stamp_end(neg_tip_d, neg_tip_h);
+            translate([0, 0, z_grip]) cylinder(d = grip_d, h = grip_h);
+            translate([0, 0, z_top]) mirror([0, 0, 1]) stamp_end(pos_tip_d, pos_tip_h);
         }
-        translate([0, 0, -1]) cylinder(d = sight_d, h = 100);
+        // big marks on the grip side (readable): + near the + end, - near the - end
+        for (a = [0, 180]) rotate(a) {
+            translate([grip_d / 2 - mark_h, 0, z_grip + grip_h * 0.75]) rotate([0, 90, 0]) mark("+");
+            translate([grip_d / 2 - mark_h, 0, z_grip + grip_h * 0.25]) rotate([0, 90, 0]) mark("-");
+        }
     }
 }
 
